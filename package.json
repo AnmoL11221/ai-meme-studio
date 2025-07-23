@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"backend,frontend\" --prefix-colors \"cyan,magenta\"",
+    "dev:both": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"backend,frontend\" --prefix-colors \"cyan,magenta\"",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
@@ -24,7 +25,8 @@
     "prettier": "^3.1.0",
     "eslint": "^8.56.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0"
+    "@typescript-eslint/parser": "^6.15.0",
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=18.0.0",

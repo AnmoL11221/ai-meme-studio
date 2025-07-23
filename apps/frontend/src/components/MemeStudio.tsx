@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Send } from 'lucide-react';
+import { 
+  MemeCreationState, 
+  MemeCreationStatus, 
+  WebSocketEvent 
+} from '@ai-meme-studio/shared-types';
+import { MemeCreationProgress } from './MemeCreationProgress';
 
 interface MemeStudioProps {
   onBack?: () => void;
@@ -8,13 +14,99 @@ interface MemeStudioProps {
 export function MemeStudio({ onBack }: MemeStudioProps) {
   const [concept, setConcept] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [memeState, setMemeState] = useState<MemeCreationState | null>(null);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:3001/ws');
+    
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      setSocket(ws);
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data: WebSocketEvent = JSON.parse(event.data);
+        console.log('WebSocket message:', data);
+        
+        if (data.type === 'progress' && data.data) {
+          setMemeState(prev => prev ? {
+            ...prev,
+            status: data.status,
+            currentStep: data.step,
+
+            character: data.data?.character || prev.character,
+            captions: data.data?.captions || prev.captions,
+            finalMeme: data.data?.finalMeme || prev.finalMeme,
+            updatedAt: new Date()
+          } : null);
+        }
+        
+        if (data.type === 'completed') {
+          setMemeState(data.finalMeme);
+          setIsCreating(false);
+        }
+        
+        if (data.type === 'error') {
+          setMemeState(prev => prev ? {
+            ...prev,
+            status: MemeCreationStatus.FAILED,
+            error: data.error,
+            updatedAt: new Date()
+          } : null);
+          setIsCreating(false);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      setSocket(null);
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!concept.trim()) return;
+    if (!concept.trim() || isCreating) return;
     
     setIsCreating(true);
-    console.log('Creating meme with concept:', concept);
+    setMemeState(null);
+    
+    try {
+      const response = await fetch('/api/memes/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ concept }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setMemeState(result.data);
+        
+        if (socket) {
+          socket.send(JSON.stringify({
+            type: 'subscribe',
+            memeId: result.data.id
+          }));
+        }
+      } else {
+        console.error('Failed to create meme:', result.error);
+        setIsCreating(false);
+      }
+    } catch (error) {
+      console.error('Error creating meme:', error);
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -60,11 +152,21 @@ export function MemeStudio({ onBack }: MemeStudioProps) {
             <h2 className="text-2xl font-semibold text-white mb-4">
               Creation Process
             </h2>
-            <div className="space-y-4">
+            {memeState ? (
+              <MemeCreationProgress
+                status={memeState.status}
+                currentStep={memeState.currentStep}
+
+                character={memeState.character?.url}
+                finalMeme={memeState.finalMeme?.url}
+                captions={memeState.captions}
+                error={memeState.error}
+              />
+            ) : (
               <div className="text-gray-300 text-center py-8">
                 Enter a concept to start the creative process
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -7,10 +7,102 @@ import {
   MemeCreationStatus,
   MemeCreationStep
 } from '@ai-meme-studio/shared-types';
+import { MemeOrchestrator } from '../services/memeOrchestrator.js';
+import { wsManager } from '../websocket/handler.js';
+import { DatabaseService } from '../services/database.js';
+import { FileStorageService } from '../services/fileStorage.js';
+import { MemeTemplateService } from '../services/memeTemplates.js';
+import { ImageCompositor } from '../services/imageCompositor.js';
 
 export const memeRoutes: FastifyPluginAsync = async function (fastify) {
-  const memeStore = new Map<string, MemeCreationState>();
+  const orchestrator = new MemeOrchestrator();
+  const database = new DatabaseService();
+  const fileStorage = new FileStorageService();
+  const templateService = new MemeTemplateService();
+  const compositor = new ImageCompositor();
 
+  // Create meme from template (new primary method)
+  fastify.post<{
+    Body: { templateId: string; topText?: string; bottomText?: string; customText?: string };
+    Reply: CreateMemeResponse;
+  }>('/create-from-template', async (request, reply) => {
+    const { templateId, topText, bottomText, customText } = request.body;
+    
+    if (!templateId) {
+      reply.status(400);
+      return {
+        success: false,
+        error: 'Template ID is required',
+        timestamp: new Date()
+      };
+    }
+
+    const template = await templateService.getTemplateById(templateId);
+    if (!template) {
+      reply.status(404);
+      return {
+        success: false,
+        error: 'Template not found',
+        timestamp: new Date()
+      };
+    }
+
+    if (!topText && !bottomText && !customText) {
+      reply.status(400);
+      return {
+        success: false,
+        error: 'At least one text field (topText, bottomText, or customText) is required',
+        timestamp: new Date()
+      };
+    }
+    
+    const memeId = uuidv4();
+    
+    try {
+      const finalMeme = await compositor.createMemeFromTemplate(
+        template,
+        topText || customText,
+        bottomText
+      );
+
+      // Save to file storage
+      const finalMemePath = await fileStorage.saveFinalMeme(finalMeme);
+      finalMeme.url = finalMemePath;
+
+      const memeState: MemeCreationState = {
+        id: memeId,
+        templateId,
+        topText,
+        bottomText,
+        customText,
+        status: MemeCreationStatus.COMPLETED,
+        currentStep: MemeCreationStep.SET_DESIGN,
+        template,
+        finalMeme,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      database.saveMeme(memeState);
+      
+      return {
+        success: true,
+        data: memeState,
+        timestamp: new Date()
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error(`Error creating meme from template ${templateId}:`, error);
+      reply.status(500);
+      return {
+        success: false,
+        error: `Failed to create meme: ${errorMessage}`,
+        timestamp: new Date()
+      };
+    }
+  });
+
+  // Legacy create method for AI-generated memes
   fastify.post<{
     Body: { concept: string; userId?: string };
     Reply: CreateMemeResponse;
@@ -29,16 +121,21 @@ export const memeRoutes: FastifyPluginAsync = async function (fastify) {
       updatedAt: now
     };
     
-    memeStore.set(memeId, memeState);
+    database.saveMeme(memeState);
     
-    processMemeConcept(memeId, concept).catch(error => {
+    orchestrator.createMeme(memeState, (event) => {
+      wsManager.broadcastToMeme(memeId, event);
+    }).then(completedState => {
+      database.saveMeme(completedState);
+      fastify.log.info(`Meme ${memeId} completed successfully`);
+    }).catch(error => {
       fastify.log.error(`Error processing meme ${memeId}:`, error);
-      const failedState = memeStore.get(memeId);
+      const failedState = database.getMeme(memeId);
       if (failedState) {
         failedState.status = MemeCreationStatus.FAILED;
         failedState.error = error.message;
         failedState.updatedAt = new Date();
-        memeStore.set(memeId, failedState);
+        database.saveMeme(failedState);
       }
     });
     
@@ -54,7 +151,7 @@ export const memeRoutes: FastifyPluginAsync = async function (fastify) {
     Reply: GetMemeStatusResponse;
   }>('/status/:id', async (request, reply) => {
     const { id } = request.params;
-    const memeState = memeStore.get(id);
+    const memeState = database.getMeme(id);
     
     if (!memeState) {
       reply.status(404);
@@ -73,7 +170,7 @@ export const memeRoutes: FastifyPluginAsync = async function (fastify) {
   });
 
   fastify.get('/all', async () => {
-    const allMemes = Array.from(memeStore.values());
+    const allMemes = database.getAllMemes();
     return {
       success: true,
       data: allMemes,
@@ -81,31 +178,33 @@ export const memeRoutes: FastifyPluginAsync = async function (fastify) {
     };
   });
 
-  async function processMemeConcept(memeId: string, concept: string): Promise<void> {
-    fastify.log.info(`Starting meme creation for ID: ${memeId}, concept: "${concept}"`);
+  fastify.get('/stats', async () => {
+    const memesCount = database.getMemesCount();
+    const storageStats = await fileStorage.getStorageStats();
     
-    const memeState = memeStore.get(memeId);
-    if (!memeState) return;
+    return {
+      success: true,
+      data: {
+        totalMemes: memesCount,
+        storage: storageStats
+      },
+      timestamp: new Date()
+    };
+  });
 
-    const steps = [
-      { status: MemeCreationStatus.GENERATING_BACKGROUND, step: MemeCreationStep.SET_DESIGN },
-      { status: MemeCreationStatus.GENERATING_CHARACTER, step: MemeCreationStep.CASTING },
-      { status: MemeCreationStatus.COMPOSITING, step: MemeCreationStep.FINAL_COMPOSITION },
-      { status: MemeCreationStatus.GENERATING_CAPTIONS, step: MemeCreationStep.GAG_WRITING },
-      { status: MemeCreationStatus.COMPLETED, step: MemeCreationStep.GAG_WRITING }
-    ];
-
-    for (const { status, step } of steps) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      memeState.status = status;
-      memeState.currentStep = step;
-      memeState.updatedAt = new Date();
-      memeStore.set(memeId, memeState);
-      
-      fastify.log.info(`Meme ${memeId} updated: ${status}`);
+  fastify.get('/uploads/*', async (request, reply) => {
+    const imagePath = (request.params as any)['*'];
+    const imageBuffer = await fileStorage.getImageBuffer(`/uploads/${imagePath}`);
+    
+    if (!imageBuffer) {
+      reply.status(404).send({ error: 'Image not found' });
+      return;
     }
     
-    fastify.log.info(`Meme creation completed for ID: ${memeId}`);
-  }
+    reply.type('image/png').send(imageBuffer);
+  });
+
+  fastify.addHook('onReady', async () => {
+    wsManager.initialize(fastify);
+  });
 }; 

@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+*/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -8,6 +9,8 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+*/dist/
+*/build/
 .next/
 .nuxt/
 .vuepress/dist/
@@ -41,6 +44,9 @@ Thumbs.db
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Runtime data
 pids/
@@ -64,3 +70,23 @@ temp/
 
 # AI API keys and sensitive data
 .env.api-keys 
+
+# Data and uploads - prevent pushing generated files
+data/
+*/data/
+uploads/
+*/uploads/
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated images and media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webp
+!**/assets/**
+!**/public/**
+!**/static/** 

@@ -7,13 +7,17 @@ export interface MemeRequest {
 
 export interface MemeCreationState {
   id: string;
+  concept?: string;
+  templateId?: string;
+  topText?: string;
+  bottomText?: string;
+  customText?: string;
   status: MemeCreationStatus;
-  concept: string;
-  background?: GeneratedImage;
-  character?: GeneratedImage;
-  captions?: string[];
-  finalMeme?: GeneratedImage;
   currentStep: MemeCreationStep;
+  template?: MemeTemplate;
+  character?: GeneratedImage;
+  finalMeme?: GeneratedImage;
+  captions?: string[];
   error?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -118,4 +122,23 @@ export interface MemeCompletedEvent {
   finalMeme: MemeCreationState;
 }
 
-export type WebSocketEvent = MemeProgressEvent | MemeErrorEvent | MemeCompletedEvent; 
+export type WebSocketEvent = MemeProgressEvent | MemeErrorEvent | MemeCompletedEvent;
+
+export interface MemeTemplate {
+  id: string;
+  name: string;
+  imageUrl: string;
+  topTextPosition: { x: number; y: number; width: number; height: number };
+  bottomTextPosition: { x: number; y: number; width: number; height: number };
+  category: string;
+  tags: string[];
+  popularity: number;
+}
+
+export interface MemeCreationInput {
+  concept?: string;
+  templateId?: string;
+  topText?: string;
+  bottomText?: string;
+  customText?: string;
+} 

@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+dotenv.config({ path: '../.env' });
+dotenv.config({ path: '../../.env' });
+
 interface Config {
   PORT: number;
   LOG_LEVEL: string;

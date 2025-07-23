@@ -1,3 +1,18 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
+dotenv.config();
+
+console.log('🔍 Environment check:');
+console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Loaded' : '❌ Missing');
+console.log('STABILITY_AI_API_KEY:', process.env.STABILITY_AI_API_KEY ? '✅ Loaded' : '❌ Missing');
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
@@ -6,6 +21,7 @@ import swaggerUi from '@fastify/swagger-ui';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 
 import { memeRoutes } from './routes/meme.js';
+import { templateRoutes } from './routes/templates.js';
 import { websocketHandler } from './websocket/handler.js';
 import { config } from './config/index.js';
 
@@ -47,7 +63,8 @@ await fastify.register(swaggerUi, {
   }
 });
 
-await fastify.register(memeRoutes, { prefix: '/api/memes' });
+  await fastify.register(memeRoutes, { prefix: '/api/memes' });
+  await templateRoutes(fastify);
 
 fastify.register(async function (fastify) {
   fastify.get('/ws', { websocket: true }, websocketHandler);
