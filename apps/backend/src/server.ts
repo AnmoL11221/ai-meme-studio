@@ -22,6 +22,7 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 
 import { memeRoutes } from './routes/meme.js';
 import { templateRoutes } from './routes/templates.js';
+import { gifRoutes } from './routes/gifs.js';
 import { websocketHandler } from './websocket/handler.js';
 import { config } from './config/index.js';
 
@@ -65,6 +66,7 @@ await fastify.register(swaggerUi, {
 
   await fastify.register(memeRoutes, { prefix: '/api/memes' });
   await templateRoutes(fastify);
+  await gifRoutes(fastify);
 
 fastify.register(async function (fastify) {
   fastify.get('/ws', { websocket: true }, websocketHandler);

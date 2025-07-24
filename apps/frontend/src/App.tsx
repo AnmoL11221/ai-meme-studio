@@ -5,10 +5,11 @@ import { TemplateGallery } from './components/TemplateGallery';
 import { EnhancedMemeCreator } from './components/EnhancedMemeCreator';
 import { MemeStudio } from './components/MemeStudio';
 import { OptimizedAIMemeCreator } from './components/OptimizedAIMemeCreator';
+import { GifStudio } from './components/GifStudio';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'creator' | 'ai-studio' | 'optimized-ai'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'creator' | 'ai-studio' | 'optimized-ai' | 'gif-studio'>('home');
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
 
   const handleTemplateSelect = (template: MemeTemplate) => {
@@ -36,6 +37,9 @@ function App() {
       case 'optimized-ai':
         return <OptimizedAIMemeCreator onBack={() => setCurrentView('home')} />;
       
+      case 'gif-studio':
+        return <GifStudio onBack={() => setCurrentView('home')} />;
+      
       default:
         return renderHomePage();
     }
@@ -55,7 +59,7 @@ function App() {
           </p>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div 
             onClick={() => setCurrentView('gallery')}
             className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center cursor-pointer hover:bg-white/20 transition-all group"
@@ -84,6 +88,22 @@ function App() {
             </div>
           </div>
 
+          <div 
+            onClick={() => setCurrentView('gif-studio')}
+            className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center cursor-pointer hover:bg-white/20 transition-all group"
+          >
+            <Sparkles className="h-16 w-16 text-yellow-400 mx-auto mb-4 group-hover:scale-110 transition-transform" />
+            <h3 className="text-2xl font-semibold text-white mb-4">GIF Studio</h3>
+            <p className="text-gray-300 mb-6">
+              Browse thousands of GIFs from across the internet. Add text, effects, and create personalized animated memes.
+            </p>
+            <div className="bg-yellow-500 text-white px-6 py-2 rounded-lg inline-block">
+              Create GIF Memes
+            </div>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-1 gap-8 mb-16 max-w-md mx-auto">
           <div 
             onClick={() => setCurrentView('ai-studio')}
             className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center cursor-pointer hover:bg-white/20 transition-all group"
