@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Sparkles, Zap, Users, Image, Bot, ArrowLeft } from 'lucide-react';
+import { Sparkles, Image, Bot, ArrowLeft } from 'lucide-react';
 import { MemeTemplate } from '@ai-meme-studio/shared-types';
 import { TemplateGallery } from './components/TemplateGallery';
 import { EnhancedMemeCreator } from './components/EnhancedMemeCreator';
 import { MemeStudio } from './components/MemeStudio';
+import { OptimizedAIMemeCreator } from './components/OptimizedAIMemeCreator';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'creator' | 'ai-studio'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'gallery' | 'creator' | 'ai-studio' | 'optimized-ai'>('home');
   const [selectedTemplate, setSelectedTemplate] = useState<MemeTemplate | null>(null);
 
   const handleTemplateSelect = (template: MemeTemplate) => {
@@ -31,6 +32,9 @@ function App() {
       
       case 'ai-studio':
         return <MemeStudio onBack={() => setCurrentView('home')} />;
+      
+      case 'optimized-ai':
+        return <OptimizedAIMemeCreator onBack={() => setCurrentView('home')} />;
       
       default:
         return renderHomePage();
@@ -67,16 +71,30 @@ function App() {
           </div>
 
           <div 
-            onClick={() => setCurrentView('ai-studio')}
+            onClick={() => setCurrentView('optimized-ai')}
             className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center cursor-pointer hover:bg-white/20 transition-all group"
           >
             <Bot className="h-16 w-16 text-purple-400 mx-auto mb-4 group-hover:scale-110 transition-transform" />
-            <h3 className="text-2xl font-semibold text-white mb-4">AI Meme Studio</h3>
+            <h3 className="text-2xl font-semibold text-white mb-4">AI Studio</h3>
             <p className="text-gray-300 mb-6">
-              Generate completely custom memes using AI. Three specialized agents create backgrounds, characters, and perfect punchlines.
+              Generate cohesive, professional meme images with AI. Single unified generation creates better results than separate background + character merging.
             </p>
             <div className="bg-purple-500 text-white px-6 py-2 rounded-lg inline-block">
-              Try AI Generation
+              Generate AI Memes
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setCurrentView('ai-studio')}
+            className="bg-white/10 backdrop-blur-sm rounded-lg p-8 text-center cursor-pointer hover:bg-white/20 transition-all group"
+          >
+            <Bot className="h-16 w-16 text-green-400 mx-auto mb-4 group-hover:scale-110 transition-transform" />
+            <h3 className="text-2xl font-semibold text-white mb-4">Legacy AI Studio</h3>
+            <p className="text-gray-300 mb-6">
+              Original multi-agent system with separate background, character, and text generation. May have blending issues.
+            </p>
+            <div className="bg-green-500 text-white px-6 py-2 rounded-lg inline-block">
+              Try Legacy AI
             </div>
           </div>
         </div>

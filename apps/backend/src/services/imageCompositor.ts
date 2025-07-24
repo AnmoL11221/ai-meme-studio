@@ -259,4 +259,120 @@ export class ImageCompositor {
       throw new Error(`Text addition failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  async addCustomTextToImage(
+    baseImage: GeneratedImage,
+    textConfig: {
+      text: string;
+      position: { x: number; y: number };
+      style: {
+        fontSize: number;
+        color: string;
+        fontWeight?: string;
+        fontFamily?: string;
+      };
+    }
+  ): Promise<GeneratedImage> {
+    try {
+      console.log(`📝 Adding custom text: "${textConfig.text}" at (${textConfig.position.x}, ${textConfig.position.y})`);
+      
+      let imageBuffer: Buffer;
+      
+      if (baseImage.url.startsWith('http')) {
+        const response = await axios.get(baseImage.url, { 
+          responseType: 'arraybuffer',
+          timeout: 15000 
+        });
+        imageBuffer = Buffer.from(response.data);
+      } else {
+        const fs = await import('fs');
+        imageBuffer = fs.readFileSync(baseImage.url);
+      }
+
+      let memeImage = sharp(imageBuffer);
+      const { width, height } = await memeImage.metadata();
+      
+      if (!width || !height) {
+        throw new Error('Unable to get image dimensions');
+      }
+
+      const textSvg = this.createCustomTextSvg(
+        textConfig.text,
+        textConfig.style,
+        width,
+        height
+      );
+
+      const finalImageBuffer = await memeImage
+        .composite([{
+          input: Buffer.from(textSvg),
+          top: Math.max(0, Math.min(textConfig.position.y, height - 50)),
+          left: Math.max(0, Math.min(textConfig.position.x, width - 100))
+        }])
+        .png()
+        .toBuffer();
+
+      const finalImage: GeneratedImage = {
+        id: uuidv4(),
+        url: '',
+        prompt: `${baseImage.prompt} + custom text: ${textConfig.text}`,
+        model: baseImage.model,
+        width: width,
+        height: height,
+        generatedAt: new Date(),
+        data: finalImageBuffer
+      };
+
+      return finalImage;
+    } catch (error) {
+      console.error('Error adding custom text to image:', error);
+      throw new Error(`Failed to add custom text: ${(error as Error).message}`);
+    }
+  }
+
+  private createCustomTextSvg(
+    text: string,
+    style: {
+      fontSize: number;
+      color: string;
+      fontWeight?: string;
+      fontFamily?: string;
+    },
+    imageWidth: number,
+    imageHeight: number
+  ): string {
+    const lines = this.wrapText(text, Math.floor(imageWidth / (style.fontSize * 0.6)));
+    const lineHeight = style.fontSize * 1.2;
+    const totalHeight = lines.length * lineHeight;
+    
+    const svgHeight = Math.min(totalHeight + 20, imageHeight);
+    const svgWidth = imageWidth;
+    
+    let svgContent = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+    
+    lines.forEach((line, index) => {
+      const y = 20 + (index * lineHeight);
+      const x = svgWidth / 2;
+      
+      svgContent += `
+        <text x="${x}" y="${y}" 
+              font-family="${style.fontFamily || 'Impact, Arial Black, sans-serif'}" 
+              font-size="${style.fontSize}" 
+              font-weight="${style.fontWeight || 'bold'}" 
+              text-anchor="middle" 
+              stroke="black" 
+              stroke-width="3" 
+              fill="none">${this.escapeXml(line)}</text>
+        <text x="${x}" y="${y}" 
+              font-family="${style.fontFamily || 'Impact, Arial Black, sans-serif'}" 
+              font-size="${style.fontSize}" 
+              font-weight="${style.fontWeight || 'bold'}" 
+              text-anchor="middle" 
+              fill="${style.color}">${this.escapeXml(line)}</text>
+      `;
+    });
+    
+    svgContent += '</svg>';
+    return svgContent;
+  }
 } 

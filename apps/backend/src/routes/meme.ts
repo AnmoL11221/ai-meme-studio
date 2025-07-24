@@ -8,6 +8,7 @@ import {
   MemeCreationStep
 } from '@ai-meme-studio/shared-types';
 import { MemeOrchestrator } from '../services/memeOrchestrator.js';
+import { OptimizedMemeOrchestrator } from '../services/optimizedMemeOrchestrator.js';
 import { wsManager } from '../websocket/handler.js';
 import { DatabaseService } from '../services/database.js';
 import { FileStorageService } from '../services/fileStorage.js';
@@ -16,6 +17,7 @@ import { ImageCompositor } from '../services/imageCompositor.js';
 
 export const memeRoutes: FastifyPluginAsync = async function (fastify) {
   const orchestrator = new MemeOrchestrator();
+  const optimizedOrchestrator = new OptimizedMemeOrchestrator();
   const database = new DatabaseService();
   const fileStorage = new FileStorageService();
   const templateService = new MemeTemplateService();
@@ -97,6 +99,104 @@ export const memeRoutes: FastifyPluginAsync = async function (fastify) {
       return {
         success: false,
         error: `Failed to create meme: ${errorMessage}`,
+        timestamp: new Date()
+      };
+    }
+  });
+
+  // Optimized AI meme generation (single cohesive image)
+  fastify.post<{
+    Body: { concept: string; description: string; userId?: string };
+    Reply: CreateMemeResponse;
+  }>('/create-optimized', async (request) => {
+    const { concept, description } = request.body;
+    
+    if (!concept || !description) {
+      return {
+        success: false,
+        error: 'Both concept and description are required',
+        timestamp: new Date()
+      };
+    }
+    
+    const memeId = uuidv4();
+    const now = new Date();
+    
+    const memeState: MemeCreationState = {
+      id: memeId,
+      status: MemeCreationStatus.PENDING,
+      concept,
+      customText: description,
+      currentStep: MemeCreationStep.SET_DESIGN,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    database.saveMeme(memeState);
+    
+    optimizedOrchestrator.createOptimizedMeme(memeState, (event) => {
+      wsManager.broadcastToMeme(memeId, event);
+    }).then(completedState => {
+      database.saveMeme(completedState);
+      fastify.log.info(`Optimized meme ${memeId} completed successfully`);
+    }).catch(error => {
+      fastify.log.error(`Error processing optimized meme ${memeId}:`, error);
+      const failedState = database.getMeme(memeId);
+      if (failedState) {
+        failedState.status = MemeCreationStatus.FAILED;
+        failedState.error = error.message;
+        failedState.updatedAt = new Date();
+        database.saveMeme(failedState);
+      }
+    });
+    
+    return {
+      success: true,
+      data: memeState,
+      timestamp: new Date()
+    };
+  });
+
+  // Add text to generated meme
+  fastify.post<{
+    Body: { 
+      memeId: string; 
+      texts: Array<{
+        content: string;
+        x: number;
+        y: number;
+        fontSize: number;
+        color: string;
+        fontWeight?: string;
+      }>;
+    };
+  }>('/add-text', async (request, reply) => {
+    const { memeId, texts } = request.body;
+    
+    if (!memeId || !texts || texts.length === 0) {
+      reply.status(400);
+      return {
+        success: false,
+        error: 'Meme ID and texts array are required',
+        timestamp: new Date()
+      };
+    }
+    
+    try {
+      const updatedMeme = await optimizedOrchestrator.addTextToMeme(memeId, texts);
+      
+      return {
+        success: true,
+        data: updatedMeme,
+        timestamp: new Date()
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error(`Error adding text to meme ${memeId}:`, error);
+      reply.status(500);
+      return {
+        success: false,
+        error: errorMessage,
         timestamp: new Date()
       };
     }

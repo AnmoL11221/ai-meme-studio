@@ -37,7 +37,8 @@ export enum MemeCreationStep {
   SET_DESIGN = 1,
   CASTING = 2,
   GAG_WRITING = 3,
-  FINAL_COMPOSITION = 4
+  FINAL_COMPOSITION = 4,
+  COMPLETED = 5
 }
 
 export interface GeneratedImage {

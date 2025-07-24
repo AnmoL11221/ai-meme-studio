@@ -131,4 +131,20 @@ export class StabilityAIService {
       cfg_scale: 9
     });
   }
+
+  async generateMemeImage(prompt: string): Promise<GeneratedImage> {
+    if (!prompt || prompt.trim().length === 0) {
+      throw new Error('Meme image prompt cannot be empty');
+    }
+    
+    const optimizedPrompt = `${prompt.trim()}, high quality, clear composition, good contrast for text overlay, professional photography, detailed, sharp focus, meme-style image, no text in image, clean background`;
+    console.log(`🎭 Generating unified meme image with prompt: "${optimizedPrompt}" (${optimizedPrompt.length} chars)`);
+    
+    return this.generateImage(optimizedPrompt, {
+      width: 1024,
+      height: 1024,
+      steps: 50,
+      cfg_scale: 8.0
+    });
+  }
 } 
