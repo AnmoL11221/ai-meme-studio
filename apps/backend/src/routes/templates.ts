@@ -107,32 +107,19 @@ export async function templateRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Get templates by category with pagination
+  // Get templates by category
   fastify.get('/api/templates/category/:category', async (request, reply) => {
     try {
       const params = request.params as { category: string };
-      const query = request.query as { page?: string; limit?: string };
       
-      const page = parseInt(query.page || '1');
-      const limit = parseInt(query.limit || '50');
-      
-      const result = await templateService.getTemplatesByCategoryWithPagination({
-        category: params.category,
-        page,
-        limit
-      });
+      const templates = await templateService.getTemplatesByCategory(params.category);
 
       reply.send({
         success: true,
-        data: result.templates,
+        data: templates,
         meta: {
           category: params.category,
-          page,
-          limit,
-          total: result.total,
-          totalPages: result.totalPages,
-          hasNextPage: result.hasNextPage,
-          hasPrevPage: result.hasPrevPage
+          total: templates.length
         }
       });
     } catch (error) {
