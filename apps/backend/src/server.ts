@@ -27,6 +27,7 @@ import { websocketHandler } from './websocket/handler.js';
 import { config } from './config/index.js';
 import { MemeOrchestrator } from './services/memeOrchestrator.js';
 import { MemeTemplateService } from './services/memeTemplates.js';
+import { MemeCreationState, MemeCreationStep } from '@ai-meme-studio/shared-types';
 
 const fastify = Fastify({
   logger: {
@@ -129,13 +130,43 @@ fastify.get('/mcp/describe', async (request, reply) => {
             meta: { type: 'object' }
           }
         }
+      },
+      {
+        name: 'createMemeFromTemplate',
+        description: 'Create a meme from a template with custom text and optional text placement.',
+        parameters: {
+          type: 'object',
+          properties: {
+            templateId: { type: 'string', description: 'ID of the meme template' },
+            topText: { type: 'string', description: 'Top text (optional)' },
+            bottomText: { type: 'string', description: 'Bottom text (optional)' },
+            customText: { type: 'string', description: 'Custom text (optional)' },
+            topTextPosition: { type: 'object', description: 'Override for top text position (optional)' },
+            bottomTextPosition: { type: 'object', description: 'Override for bottom text position (optional)' }
+          },
+          required: ['templateId']
+        },
+        returns: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            url: { type: 'string' },
+            createdAt: { type: 'string' },
+            templateId: { type: 'string' },
+            topText: { type: 'string' },
+            bottomText: { type: 'string' },
+            customText: { type: 'string' },
+            topTextPosition: { type: 'object' },
+            bottomTextPosition: { type: 'object' }
+          }
+        }
       }
     ]
   };
 });
 
 fastify.post('/mcp/invoke', async (request, reply) => {
-  const { method, arguments: args } = request.body || {};
+  const { method, arguments: args } = request.body as { method: string; arguments: any };
   if (method === 'generateMeme') {
     const { concept, description } = args || {};
     if (!concept || !description) {
@@ -150,12 +181,12 @@ fastify.post('/mcp/invoke', async (request, reply) => {
       status: 'PENDING',
       concept,
       customText: description,
-      currentStep: 'SET_DESIGN',
+      currentStep: MemeCreationStep.SET_DESIGN,
       createdAt: now,
       updatedAt: now
     };
-    // No WebSocket for MCP, just run and return result
-    const completed = await orchestrator.createMeme(memeState);
+
+    const completed = await orchestrator.createMeme(memeState as unknown as MemeCreationState);
     return {
       id: completed.id,
       status: completed.status,
@@ -178,6 +209,57 @@ fastify.post('/mcp/invoke', async (request, reply) => {
         cache: result.cache
       }
     };
+  } else if (method === 'createMemeFromTemplate') {
+    const { templateId, topText, bottomText, customText, topTextPosition, bottomTextPosition } = args || {};
+    if (!templateId) {
+      reply.status(400);
+      return { error: 'Missing templateId' };
+    }
+    const template = await templateService.getTemplateById(templateId);
+    if (!template) {
+      reply.status(404);
+      return { error: 'Template not found' };
+    }
+    if (!topText && !bottomText && !customText) {
+      reply.status(400);
+      return { error: 'At least one text field (topText, bottomText, or customText) is required' };
+    }
+    // Override text positions if provided
+    const templateOverride = { ...template };
+    if (topTextPosition) templateOverride.topTextPosition = topTextPosition;
+    if (bottomTextPosition) templateOverride.bottomTextPosition = bottomTextPosition;
+    const memeId = `mcp-template-${Date.now()}`;
+    try {
+      const { ImageCompositor } = await import('./services/imageCompositor.js');
+      const compositor = new ImageCompositor();
+      const finalMeme = await compositor.createMemeFromTemplate(
+        templateOverride,
+        topText || customText,
+        bottomText
+      );
+      let finalMemePath = finalMeme.url;
+      if (!finalMemePath) {
+        const { FileStorageService } = await import('./services/fileStorage.js');
+        const fileStorage = new FileStorageService();
+        finalMemePath = await fileStorage.saveFinalMeme(finalMeme);
+        finalMeme.url = finalMemePath;
+      }
+      return {
+        id: memeId,
+        url: finalMeme.url,
+        createdAt: new Date(),
+        templateId,
+        topText,
+        bottomText,
+        customText,
+        topTextPosition: templateOverride.topTextPosition,
+        bottomTextPosition: templateOverride.bottomTextPosition
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      reply.status(500);
+      return { error: `Failed to create meme: ${errorMessage}` };
+    }
   } else {
     reply.status(400);
     return { error: 'Unknown method' };
