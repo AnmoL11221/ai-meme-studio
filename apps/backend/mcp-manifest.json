@@ -1,0 +1,53 @@
+{
+  "name": "AI Meme Studio",
+  "description": "Generate AI memes and list meme templates via MCP.",
+  "version": "1.0.0",
+  "endpoints": {
+    "describe": "/mcp/describe",
+    "invoke": "/mcp/invoke"
+  },
+  "methods": [
+    {
+      "name": "generateMeme",
+      "description": "Generate an AI meme from a concept and description.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "concept": { "type": "string", "description": "The meme concept or idea." },
+          "description": { "type": "string", "description": "A description or custom text for the meme." }
+        },
+        "required": ["concept", "description"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string" },
+          "url": { "type": "string" },
+          "createdAt": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "listTemplates",
+      "description": "List available meme templates.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "number", "description": "Page number (optional)" },
+          "limit": { "type": "number", "description": "Templates per page (optional)" },
+          "sort": { "type": "string", "description": "Sort order (optional)" },
+          "source": { "type": "string", "description": "Template source (optional)" }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "templates": { "type": "array", "items": { "type": "object" } },
+          "meta": { "type": "object" }
+        }
+      }
+    }
+  ]
+} 
