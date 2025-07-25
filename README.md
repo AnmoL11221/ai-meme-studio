@@ -293,3 +293,69 @@ Whether you want to:
 **AI Meme Studio has everything you need!**
 
 Start creating at http://localhost:5173 after setup! 🚀✨ 
+
+## 🧩 Claude Desktop & MCP Integration (NEW!)
+
+You can now use AI Meme Studio as a tool in Claude Desktop via the Model Context Protocol (MCP).
+
+### Features
+- **AI Meme Generation**: Generate memes from a concept and description (`generateMeme`)
+- **Template Meme Generation**: Create memes from classic templates with custom text and placement (`createMemeFromTemplate`)
+- **Template Listing**: Browse all available meme templates (`listTemplates`)
+
+### How to Enable
+1. **Start your backend** (API server) on port 3001:
+   ```bash
+   npm run dev:backend
+   # or
+   npm start
+   ```
+2. **Edit your Claude Desktop config** (`claude_desktop_config.json`):
+   ```json
+   {
+     "mcpServers": {
+       "ai-meme-studio": {
+         "command": "echo",
+         "args": ["MCP server is already running on http://localhost:3001"]
+       }
+     }
+   }
+   ```
+3. **Restart Claude Desktop**. You should see "ai-meme-studio" in the tools menu.
+
+### Available MCP Methods
+- `generateMeme`: AI meme generation from concept/description
+  - Params: `{ concept: string, description: string }`
+- `createMemeFromTemplate`: Template meme generation with optional custom text placement
+  - Params: `{ templateId: string, topText?: string, bottomText?: string, customText?: string, topTextPosition?: object, bottomTextPosition?: object }`
+- `listTemplates`: List all meme templates (with pagination/sorting)
+
+### Example Usage
+**Generate an AI meme:**
+```json
+{
+  "method": "generateMeme",
+  "arguments": {
+    "concept": "AI takes over the world",
+    "description": "A robot sitting on a throne"
+  }
+}
+```
+**Create a meme from a template with custom placement:**
+```json
+{
+  "method": "createMemeFromTemplate",
+  "arguments": {
+    "templateId": "drake-pointing",
+    "topText": "AI",
+    "bottomText": "Humans",
+    "topTextPosition": { "x": 100, "y": 50, "width": 400, "height": 100 }
+  }
+}
+```
+
+### What Was Added
+- `/mcp/describe` and `/mcp/invoke` endpoints in the backend
+- MCP manifest and config instructions
+- Support for both AI and template meme generation via Claude Desktop
+- Optional custom text placement for template memes 
