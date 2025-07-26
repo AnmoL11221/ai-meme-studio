@@ -26,6 +26,7 @@ import { gifRoutes } from './routes/gifs.js';
 import { websocketHandler } from './websocket/handler.js';
 import { config } from './config/index.js';
 import { MemeOrchestrator } from './services/memeOrchestrator.js';
+import { OptimizedMemeOrchestrator } from './services/optimizedMemeOrchestrator.js';
 import { MemeTemplateService } from './services/memeTemplates.js';
 import { MemeCreationState, MemeCreationStep } from '@ai-meme-studio/shared-types';
 
@@ -80,6 +81,7 @@ fastify.get('/health', async () => {
 });
 
 const orchestrator = new MemeOrchestrator();
+const optimizedOrchestrator = new OptimizedMemeOrchestrator();
 const templateService = new MemeTemplateService();
 
 // MCP Protocol Endpoints
@@ -186,7 +188,13 @@ fastify.post('/mcp/invoke', async (request, reply) => {
       updatedAt: now
     };
 
-    const completed = await orchestrator.createMeme(memeState as unknown as MemeCreationState);
+    let completed;
+    try {
+      completed = await optimizedOrchestrator.createOptimizedMeme(memeState as unknown as MemeCreationState);
+    } catch (error) {
+      console.log('Optimized orchestrator failed, falling back to legacy system:', error);
+      completed = await orchestrator.createMeme(memeState as unknown as MemeCreationState);
+    }
     return {
       id: completed.id,
       status: completed.status,

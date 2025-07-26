@@ -57,11 +57,15 @@ export class UnifiedImageGenerator extends BaseAIAgent {
 
     The prompt should:
     - Create a single, cohesive image perfect for meme text overlay
-    - Be visually clear and uncluttered
-    - Have good contrast areas for text placement
+    - Be visually clear and uncluttered with good composition
+    - Have strong contrast areas at top and bottom for text placement
     - Be immediately recognizable and relatable
     - Capture the essence of the meme concept
+    - Use professional photography style with good lighting
     - Avoid text in the image (text will be added later)
+    - Create a scene that tells a story or conveys emotion
+    - Use vibrant colors and clear subjects
+    - Ensure the image works well with white text overlay
     
     Return only the optimized prompt, no explanations.`;
 
@@ -78,10 +82,13 @@ export class UnifiedImageGenerator extends BaseAIAgent {
     const prompt = `Based on this meme concept: "${concept}" and image description: "${description}", generate 3 funny, witty caption suggestions that would work well with this image.
 
     Guidelines:
-    - Keep captions short and punchy
+    - Keep captions short and punchy (under 50 characters each)
     - Make them relatable and shareable
-    - Use current internet humor styles
+    - Use current internet humor styles and meme language
     - Each caption should be different in tone (sarcastic, wholesome, absurd)
+    - Focus on the core emotion or situation
+    - Use simple, impactful language
+    - Avoid complex sentences or explanations
     
     Return only the 3 captions, one per line, no numbering or formatting.`;
 

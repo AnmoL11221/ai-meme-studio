@@ -60,12 +60,12 @@ export class ImageCompositor {
 
       return {
         id: uuidv4(),
+        url: `data:image/jpeg;base64,${outputBuffer.toString('base64')}`,
         prompt: `Template: ${template.name}, Top: ${topText || 'none'}, Bottom: ${bottomText || 'none'}`,
-        data: outputBuffer.toString('base64'),
-        format: 'jpeg',
+        model: 'template-compositor',
         width: width || 800,
         height: height || 600,
-        revisedPrompt: `Meme created from "${template.name}" template with custom text overlay`
+        generatedAt: new Date()
       };
     } catch (error) {
       console.error(`❌ Failed to create meme from template ${template.name}:`, error);
@@ -130,6 +130,42 @@ export class ImageCompositor {
       .replace(/'/g, '&#39;');
   }
 
+  private createMemeCaptionSvg(text: string, imageWidth: number, imageHeight: number): string {
+    const fontSize = Math.max(32, Math.min(80, Math.floor(imageWidth / 15)));
+    const lineHeight = fontSize * 1.3;
+    
+    const maxCharsPerLine = Math.floor(imageWidth / (fontSize * 0.6));
+    const lines = this.wrapText(text, maxCharsPerLine);
+    const totalTextHeight = lines.length * lineHeight;
+    
+    const padding = fontSize;
+    const textY = imageHeight - totalTextHeight - padding;
+    
+    return `
+      <svg width="${imageWidth}" height="${imageHeight}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            .meme-caption {
+              font-family: 'Impact', 'Arial Black', Arial, sans-serif;
+              font-size: ${fontSize}px;
+              font-weight: 900;
+              text-anchor: middle;
+              dominant-baseline: middle;
+              fill: white;
+              stroke: black;
+              stroke-width: ${Math.max(2, fontSize / 20)};
+              paint-order: stroke fill;
+              text-transform: uppercase;
+            }
+          </style>
+        </defs>
+        ${lines.map((line, index) => 
+          `<text x="${imageWidth / 2}" y="${textY + (index * lineHeight)}" class="meme-caption">${this.escapeXml(line)}</text>`
+        ).join('')}
+      </svg>
+    `;
+  }
+
   async createOptimizedComposite(
     backgroundImage: GeneratedImage,
     characterImage: GeneratedImage,
@@ -138,8 +174,11 @@ export class ImageCompositor {
     try {
       console.log('🔧 Creating optimized composite with enhanced blending...');
       
-      const backgroundBuffer = Buffer.from(backgroundImage.data, 'base64');
-      const characterBuffer = Buffer.from(characterImage.data, 'base64');
+      const backgroundData = backgroundImage.url.replace(/^data:image\/[a-z]+;base64,/, '');
+      const characterData = characterImage.url.replace(/^data:image\/[a-z]+;base64,/, '');
+      
+      const backgroundBuffer = Buffer.from(backgroundData, 'base64');
+      const characterBuffer = Buffer.from(characterData, 'base64');
 
       let background = sharp(backgroundBuffer);
       let character = sharp(characterBuffer);
@@ -189,12 +228,12 @@ export class ImageCompositor {
 
       return {
         id: uuidv4(),
+        url: `data:image/jpeg;base64,${compositeBuffer.toString('base64')}`,
         prompt: `Optimized composite: ${backgroundImage.prompt} + ${characterImage.prompt}`,
-        data: compositeBuffer.toString('base64'),
-        format: 'jpeg',
+        model: 'compositor',
         width: bgMeta.width || 800,
         height: bgMeta.height || 600,
-        revisedPrompt: `Enhanced composite with natural blending, lighting adjustment, and perspective correction`
+        generatedAt: new Date()
       };
     } catch (error) {
       console.error('Enhanced composite failed:', error);
@@ -209,8 +248,11 @@ export class ImageCompositor {
     try {
       console.log('🔧 Creating basic composite as fallback...');
       
-      const backgroundBuffer = Buffer.from(backgroundImage.data, 'base64');
-      const characterBuffer = Buffer.from(characterImage.data, 'base64');
+      const backgroundData = backgroundImage.url.replace(/^data:image\/[a-z]+;base64,/, '');
+      const characterData = characterImage.url.replace(/^data:image\/[a-z]+;base64,/, '');
+      
+      const backgroundBuffer = Buffer.from(backgroundData, 'base64');
+      const characterBuffer = Buffer.from(characterData, 'base64');
 
       const background = sharp(backgroundBuffer);
       const character = sharp(characterBuffer);
@@ -240,12 +282,12 @@ export class ImageCompositor {
 
       return {
         id: uuidv4(),
+        url: `data:image/jpeg;base64,${compositeBuffer.toString('base64')}`,
         prompt: `Basic composite: ${backgroundImage.prompt} + ${characterImage.prompt}`,
-        data: compositeBuffer.toString('base64'),
-        format: 'jpeg',
+        model: 'compositor',
         width: bgMeta.width || 800,
         height: bgMeta.height || 600,
-        revisedPrompt: `Basic composite with standard blending`
+        generatedAt: new Date()
       };
     } catch (error) {
       console.error('Basic composite failed:', error);
@@ -387,12 +429,12 @@ export class ImageCompositor {
         throw new Error('Unable to get image dimensions');
       }
 
-      const textSvg = this.createTextSvg(text, width, Math.floor(height * 0.2), Math.max(24, Math.floor(width / 20)));
+      const textSvg = this.createMemeCaptionSvg(text, width, height);
       
       const finalBuffer = await baseImage
         .composite([{
           input: Buffer.from(textSvg),
-          top: Math.floor(height * 0.8),
+          top: 0,
           left: 0,
         }])
         .png()
@@ -470,13 +512,12 @@ export class ImageCompositor {
 
       const finalImage: GeneratedImage = {
         id: uuidv4(),
-        url: '',
+        url: `data:image/png;base64,${finalImageBuffer.toString('base64')}`,
         prompt: `${baseImage.prompt} + custom text: ${textConfig.text}`,
         model: baseImage.model,
         width: width,
         height: height,
-        generatedAt: new Date(),
-        data: finalImageBuffer
+        generatedAt: new Date()
       };
 
       return finalImage;
