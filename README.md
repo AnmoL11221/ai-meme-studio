@@ -315,12 +315,14 @@ You can now use AI Meme Studio as a tool in Claude Desktop via the Model Context
    {
      "mcpServers": {
        "ai-meme-studio": {
-         "command": "echo",
-         "args": ["MCP server is already running on http://localhost:3001"]
+         "command": "/usr/bin/node",
+         "args": ["/path/to/your/ai-meme-studio/apps/backend/mcp-server.js"]
        }
      }
    }
    ```
+   
+   **Note**: Replace `/usr/bin/node` with the output of `which node` on your terminal to get the correct Node.js path for your system.
 3. **Restart Claude Desktop**. You should see "ai-meme-studio" in the tools menu.
 
 ### Available MCP Methods
