@@ -75,6 +75,7 @@ export class MemeTemplateService {
   private readonly IMGFLIP_API_URL = 'https://api.imgflip.com/get_memes';
 
   private wellKnownMemeTemplates: MemeTemplate[] = [
+    // Top Tier Classics (95-100 popularity)
     {
       id: 'drake-pointing',
       name: 'Drake Pointing',
@@ -174,6 +175,496 @@ export class MemeTemplateService {
       category: 'success',
       tags: ['stonks', 'stocks', 'profit', 'money'],
       popularity: 81
+    },
+
+    // Classic Internet Memes (80-90 popularity)
+    {
+      id: 'one-does-not-simply',
+      name: 'One Does Not Simply',
+      imageUrl: 'https://i.imgflip.com/1bij.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['boromir', 'one', 'does', 'not', 'simply'],
+      popularity: 89
+    },
+    {
+      id: 'most-interesting-man',
+      name: 'The Most Interesting Man In The World',
+      imageUrl: 'https://i.imgflip.com/1bh8.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'lifestyle',
+      tags: ['interesting', 'man', 'beer', 'dos', 'equis'],
+      popularity: 86
+    },
+    {
+      id: 'bad-luck-brian',
+      name: 'Bad Luck Brian',
+      imageUrl: 'https://i.imgflip.com/1bip.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'disaster',
+      tags: ['bad', 'luck', 'brian', 'misfortune'],
+      popularity: 83
+    },
+    {
+      id: 'success-kid',
+      name: 'Success Kid',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'success',
+      tags: ['success', 'kid', 'victory', 'achievement'],
+      popularity: 85
+    },
+    {
+      id: 'grumpy-cat',
+      name: 'Grumpy Cat',
+      imageUrl: 'https://i.imgflip.com/1bh7.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'animals',
+      tags: ['grumpy', 'cat', 'no', 'angry'],
+      popularity: 87
+    },
+    {
+      id: 'first-world-problems',
+      name: 'First World Problems',
+      imageUrl: 'https://i.imgflip.com/1bhf.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'lifestyle',
+      tags: ['first', 'world', 'problems', 'privileged'],
+      popularity: 80
+    },
+    {
+      id: 'philosoraptor',
+      name: 'Philosoraptor',
+      imageUrl: 'https://i.imgflip.com/1bhm.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'philosophy',
+      tags: ['philosoraptor', 'philosophy', 'deep', 'thought'],
+      popularity: 82
+    },
+    {
+      id: 'college-freshman',
+      name: 'College Freshman',
+      imageUrl: 'https://i.imgflip.com/1bhj.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'education',
+      tags: ['college', 'freshman', 'student', 'naive'],
+      popularity: 78
+    },
+    {
+      id: 'captain-picard-facepalm',
+      name: 'Captain Picard Facepalm',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['picard', 'facepalm', 'disappointment', 'star', 'trek'],
+      popularity: 84
+    },
+    {
+      id: 'y-u-no',
+      name: 'Y U No',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['y', 'u', 'no', 'why', 'angry'],
+      popularity: 79
+    },
+
+    // Modern Classics (75-85 popularity)
+    {
+      id: 'roll-safe-think-about-it',
+      name: 'Roll Safe Think About It',
+      imageUrl: 'https://i.imgflip.com/1h7in3.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['roll', 'safe', 'think', 'about', 'it'],
+      popularity: 83
+    },
+    {
+      id: 'hide-the-pain-harold',
+      name: 'Hide the Pain Harold',
+      imageUrl: 'https://i.imgflip.com/gk5el.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['hide', 'pain', 'harold', 'smile', 'sad'],
+      popularity: 85
+    },
+    {
+      id: 'epic-handshake',
+      name: 'Epic Handshake',
+      imageUrl: 'https://i.imgflip.com/1otk96.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'friendship',
+      tags: ['epic', 'handshake', 'friendship', 'agreement'],
+      popularity: 81
+    },
+    {
+      id: 'matrix-morpheus',
+      name: 'Matrix Morpheus',
+      imageUrl: 'https://i.imgflip.com/1w7ygt.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'philosophy',
+      tags: ['matrix', 'morpheus', 'red', 'pill', 'blue'],
+      popularity: 82
+    },
+    {
+      id: 'kermit-tea',
+      name: 'Kermit Tea',
+      imageUrl: 'https://i.imgflip.com/1nz6.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['kermit', 'tea', 'but', 'thats', 'none'],
+      popularity: 80
+    },
+    {
+      id: 'arthur-fist',
+      name: 'Arthur Fist',
+      imageUrl: 'https://i.imgflip.com/1c1uej.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['arthur', 'fist', 'angry', 'frustrated'],
+      popularity: 78
+    },
+    {
+      id: 'monkey-puppet',
+      name: 'Monkey Puppet',
+      imageUrl: 'https://i.imgflip.com/1g8my4.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['monkey', 'puppet', 'look', 'away'],
+      popularity: 76
+    },
+    {
+      id: 'side-eye-chloe',
+      name: 'Side Eye Chloe',
+      imageUrl: 'https://i.imgflip.com/1p7in3.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['side', 'eye', 'chloe', 'judging', 'look'],
+      popularity: 77
+    },
+    {
+      id: 'disaster-girl',
+      name: 'Disaster Girl',
+      imageUrl: 'https://i.imgflip.com/23ls.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'mischief',
+      tags: ['disaster', 'girl', 'smile', 'mischief'],
+      popularity: 79
+    },
+    {
+      id: 'overly-attached-girlfriend',
+      name: 'Overly Attached Girlfriend',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'relationship',
+      tags: ['overly', 'attached', 'girlfriend', 'clingy'],
+      popularity: 81
+    },
+
+    // Social Media Era (70-80 popularity)
+    {
+      id: 'socially-awkward-penguin',
+      name: 'Socially Awkward Penguin',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'awkward',
+      tags: ['socially', 'awkward', 'penguin', 'uncomfortable'],
+      popularity: 77
+    },
+    {
+      id: 'confession-bear',
+      name: 'Confession Bear',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'confession',
+      tags: ['confession', 'bear', 'secret', 'truth'],
+      popularity: 75
+    },
+    {
+      id: 'advice-dog',
+      name: 'Advice Dog',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'advice',
+      tags: ['advice', 'dog', 'helpful', 'tip'],
+      popularity: 73
+    },
+    {
+      id: 'courage-wolf',
+      name: 'Courage Wolf',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'motivation',
+      tags: ['courage', 'wolf', 'brave', 'motivation'],
+      popularity: 74
+    },
+    {
+      id: 'insanity-wolf',
+      name: 'Insanity Wolf',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'extreme',
+      tags: ['insanity', 'wolf', 'crazy', 'extreme'],
+      popularity: 72
+    },
+    {
+      id: 'foul-bachelor-frog',
+      name: 'Foul Bachelor Frog',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'lifestyle',
+      tags: ['foul', 'bachelor', 'frog', 'gross'],
+      popularity: 71
+    },
+    {
+      id: 'good-guy-greg',
+      name: 'Good Guy Greg',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'positive',
+      tags: ['good', 'guy', 'greg', 'nice', 'helpful'],
+      popularity: 73
+    },
+    {
+      id: 'scumbag-steve',
+      name: 'Scumbag Steve',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'negative',
+      tags: ['scumbag', 'steve', 'bad', 'person'],
+      popularity: 70
+    },
+
+    // Pop Culture References (65-75 popularity)
+    {
+      id: 'boromir-one-ring',
+      name: 'Boromir One Ring',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'fantasy',
+      tags: ['boromir', 'one', 'ring', 'lord', 'rings'],
+      popularity: 75
+    },
+    {
+      id: 'condescending-wonka',
+      name: 'Condescending Wonka',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'sarcasm',
+      tags: ['condescending', 'wonka', 'sarcastic', 'chocolate'],
+      popularity: 74
+    },
+    {
+      id: 'x-all-the-y',
+      name: 'X All The Y',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['x', 'all', 'the', 'y', 'everything'],
+      popularity: 72
+    },
+    {
+      id: 'ancient-aliens',
+      name: 'Ancient Aliens',
+      imageUrl: 'https://i.imgflip.com/26am.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'conspiracy',
+      tags: ['ancient', 'aliens', 'conspiracy', 'theory'],
+      popularity: 73
+    },
+    {
+      id: 'lisa-simpson-presentation',
+      name: 'Lisa Simpson Presentation',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'presentation',
+      tags: ['lisa', 'simpson', 'presentation', 'point'],
+      popularity: 71
+    },
+    {
+      id: 'homer-simpson-bush',
+      name: 'Homer Simpson Bush',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'hiding',
+      tags: ['homer', 'simpson', 'bush', 'hiding'],
+      popularity: 69
+    },
+    {
+      id: 'peter-griffin-pc',
+      name: 'Peter Griffin PC',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['peter', 'griffin', 'pc', 'computer'],
+      popularity: 68
+    },
+    {
+      id: 'stewie-griffin',
+      name: 'Stewie Griffin',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['stewie', 'griffin', 'baby', 'evil'],
+      popularity: 67
+    },
+    {
+      id: 'cleveland-show',
+      name: 'Cleveland Show',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['cleveland', 'show', 'family', 'guy'],
+      popularity: 65
+    },
+    {
+      id: 'quagmire',
+      name: 'Quagmire',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['quagmire', 'giggity', 'family', 'guy'],
+      popularity: 66
+    },
+
+    // Modern Internet Culture (60-70 popularity)
+    {
+      id: 'gru-plan',
+      name: 'Gru Plan',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'planning',
+      tags: ['gru', 'plan', 'despicable', 'me'],
+      popularity: 70
+    },
+    {
+      id: 'gru-presentation',
+      name: 'Gru Presentation',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'presentation',
+      tags: ['gru', 'presentation', 'despicable', 'me'],
+      popularity: 69
+    },
+    {
+      id: 'brian-griffin',
+      name: 'Brian Griffin',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['brian', 'griffin', 'dog', 'family', 'guy'],
+      popularity: 67
+    },
+    {
+      id: 'lois-griffin',
+      name: 'Lois Griffin',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['lois', 'griffin', 'family', 'guy'],
+      popularity: 65
+    },
+    {
+      id: 'bart-simpson',
+      name: 'Bart Simpson',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'mischief',
+      tags: ['bart', 'simpson', 'mischief', 'trouble'],
+      popularity: 68
+    },
+    {
+      id: 'marge-simpson',
+      name: 'Marge Simpson',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'reaction',
+      tags: ['marge', 'simpson', 'mother', 'family'],
+      popularity: 64
+    },
+    {
+      id: 'trump-signing',
+      name: 'Trump Signing',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'politics',
+      tags: ['trump', 'signing', 'president', 'politics'],
+      popularity: 63
+    },
+    {
+      id: 'bernie-sanders',
+      name: 'Bernie Sanders',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'politics',
+      tags: ['bernie', 'sanders', 'politics', 'democrat'],
+      popularity: 62
+    },
+    {
+      id: 'obama-not-bad',
+      name: 'Obama Not Bad',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'politics',
+      tags: ['obama', 'not', 'bad', 'president'],
+      popularity: 61
+    },
+    {
+      id: 'biden-pointing',
+      name: 'Biden Pointing',
+      imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+      topTextPosition: { x: 50, y: 50, width: 400, height: 100 },
+      bottomTextPosition: { x: 50, y: 350, width: 400, height: 100 },
+      category: 'politics',
+      tags: ['biden', 'pointing', 'president', 'politics'],
+      popularity: 60
     }
   ];
 
@@ -271,54 +762,47 @@ export class MemeTemplateService {
   }
 
   private getClassicMemeTemplates(): MemeTemplate[] {
+    // Additional classic templates not in the main collection
     const classics = [
       {
-        id: 'one-does-not-simply',
-        name: 'One Does Not Simply',
-        imageUrl: 'https://i.imgflip.com/1bij.jpg',
-        category: 'reaction',
-        tags: ['boromir', 'one', 'does', 'not', 'simply'],
-        popularity: 89
-      },
-      {
-        id: 'most-interesting-man',
-        name: 'The Most Interesting Man In The World',
-        imageUrl: 'https://i.imgflip.com/1bh8.jpg',
-        category: 'lifestyle',
-        tags: ['interesting', 'man', 'beer', 'dos', 'equis'],
-        popularity: 86
-      },
-      {
-        id: 'bad-luck-brian',
-        name: 'Bad Luck Brian',
-        imageUrl: 'https://i.imgflip.com/1bip.jpg',
-        category: 'disaster',
-        tags: ['bad', 'luck', 'brian', 'misfortune'],
-        popularity: 83
-      },
-      {
-        id: 'success-kid',
-        name: 'Success Kid',
+        id: 'futurama-fry',
+        name: 'Futurama Fry',
         imageUrl: 'https://i.imgflip.com/1bhk.jpg',
-        category: 'success',
-        tags: ['success', 'kid', 'victory', 'achievement'],
-        popularity: 85
+        category: 'reaction',
+        tags: ['futurama', 'fry', 'not', 'sure'],
+        popularity: 76
       },
       {
-        id: 'grumpy-cat',
-        name: 'Grumpy Cat',
-        imageUrl: 'https://i.imgflip.com/1bh7.jpg',
-        category: 'animals',
-        tags: ['grumpy', 'cat', 'no', 'angry'],
-        popularity: 87
+        id: 'so-hot-right-now',
+        name: 'So Hot Right Now',
+        imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+        category: 'reaction',
+        tags: ['so', 'hot', 'right', 'now', 'mugatu'],
+        popularity: 74
       },
       {
-        id: 'first-world-problems',
-        name: 'First World Problems',
-        imageUrl: 'https://i.imgflip.com/1bhf.jpg',
-        category: 'lifestyle',
-        tags: ['first', 'world', 'problems', 'privileged'],
-        popularity: 80
+        id: 'x-everywhere',
+        name: 'X Everywhere',
+        imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+        category: 'reaction',
+        tags: ['x', 'everywhere', 'everything'],
+        popularity: 72
+      },
+      {
+        id: 'yo-dawg',
+        name: 'Yo Dawg',
+        imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+        category: 'reaction',
+        tags: ['yo', 'dawg', 'heard', 'like'],
+        popularity: 70
+      },
+      {
+        id: 'chuck-norris',
+        name: 'Chuck Norris',
+        imageUrl: 'https://i.imgflip.com/1bhk.jpg',
+        category: 'reaction',
+        tags: ['chuck', 'norris', 'facts'],
+        popularity: 68
       }
     ];
 
@@ -477,8 +961,11 @@ export class MemeTemplateService {
   private getValidCategories(): string[] {
     return [
       'reaction', 'relationship', 'decision', 'intelligence', 'mockery',
-      'disaster', 'success', 'political', 'animals', 'opinion',
-      'tv', 'workplace', 'general'
+      'disaster', 'success', 'animals', 'opinion', 'lifestyle',
+      'philosophy', 'education', 'friendship', 'mischief', 'awkward',
+      'confession', 'advice', 'motivation', 'extreme', 'positive',
+      'negative', 'fantasy', 'sarcasm', 'conspiracy', 'presentation',
+      'hiding', 'planning', 'politics', 'surprise'
     ];
   }
 

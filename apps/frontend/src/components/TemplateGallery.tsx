@@ -19,7 +19,7 @@ export function TemplateGallery({ onSelectTemplate }: TemplateGalleryProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
-  const TEMPLATES_PER_PAGE = 20;
+  const TEMPLATES_PER_PAGE = 50;
 
   // Fetch templates and categories with pagination
   useEffect(() => {
@@ -133,7 +133,7 @@ export function TemplateGallery({ onSelectTemplate }: TemplateGalleryProps) {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Meme Template Gallery</h1>
         <p className="text-gray-600">
-          Choose from {templates.length} popular meme templates from the internet
+          Choose from {templates.length}+ popular meme templates - from classic internet memes to modern viral sensations
         </p>
       </div>
 
@@ -161,11 +161,20 @@ export function TemplateGallery({ onSelectTemplate }: TemplateGalleryProps) {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
+              {categories.map(category => {
+                const categoryCount = category === 'all' 
+                  ? templates.length 
+                  : templates.filter(t => t.category === category).length;
+                
+                return (
+                  <option key={category} value={category}>
+                    {category === 'all' 
+                      ? `All Categories (${categoryCount})` 
+                      : `${category.charAt(0).toUpperCase() + category.slice(1)} (${categoryCount})`
+                    }
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -208,7 +217,7 @@ export function TemplateGallery({ onSelectTemplate }: TemplateGalleryProps) {
       ) : (
         <div className={
           viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
+            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-4'
             : 'space-y-4'
         }>
           {filteredTemplates.map((template) => (
