@@ -19,6 +19,46 @@ export interface GifTemplate {
   isAnimated: boolean;
 }
 
+interface TenorGif {
+  id: string;
+  title: string;
+  media_formats: {
+    gif?: {
+      url: string;
+      duration: number;
+      dims: [number, number];
+      size: number;
+    };
+    mediumgif?: {
+      url: string;
+      duration: number;
+      dims: [number, number];
+      size: number;
+    };
+    tinygif?: {
+      url: string;
+      duration: number;
+      dims: [number, number];
+      size: number;
+    };
+  };
+  tags: string[];
+  created: number;
+  content_description: string;
+  itemurl: string;
+  url: string;
+  hasaudio: boolean;
+  flags: string[];
+  bg_color: string;
+  composite: any;
+  hascaption: boolean;
+}
+
+interface TenorResponse {
+  results: TenorGif[];
+  next: string;
+}
+
 interface ImgflipTemplate {
   id: string;
   name: string;
@@ -41,7 +81,7 @@ export class GifService {
   private readonly CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
   
   private readonly GIPHY_API_KEY = process.env.GIPHY_API_KEY || 'demo_api_key';
-  private readonly TENOR_API_KEY = process.env.TENOR_API_KEY || 'demo_api_key';
+  private readonly TENOR_API_KEY = process.env.TENOR_API_KEY || 'AIzaSyC1234567890abcdefghijklmnopqrstuvwxyz';
 
   private enhancedFallbackGifs: GifTemplate[] = [
     // Popular Reaction GIFs
@@ -291,12 +331,32 @@ export class GifService {
 
   async fetchAllGifs(): Promise<void> {
     try {
-      console.log('🎬 Loading GIF collection with robust fallbacks...');
+      console.log('🎬 Loading GIF collection with Tenor API integration...');
       
       // Start with enhanced fallback collection
       let allGifs: GifTemplate[] = [...this.enhancedFallbackGifs];
       
-      // Try to fetch from external APIs but don't fail if they're down
+      // Try to fetch from Tenor API first (primary source)
+      try {
+        const tenorResults = await Promise.all([
+          this.fetchFromTenor('trending', 50),
+          this.fetchFromTenor('reactions', 30),
+          this.fetchFromTenor('animals', 20),
+          this.fetchFromTenor('celebration', 20),
+          this.fetchFromTenor('sports', 15),
+          this.fetchFromTenor('work', 15)
+        ]);
+        
+        const tenorGifs = tenorResults.flat();
+        if (tenorGifs.length > 0) {
+          allGifs = [...allGifs, ...tenorGifs];
+          console.log(`✅ Tenor API: ${tenorGifs.length} high-quality GIFs loaded`);
+        }
+      } catch (error) {
+        console.log('⚠️ Tenor API unavailable, trying fallback sources');
+      }
+      
+      // Try to fetch from Imgflip as backup
       try {
         const imgflipResult = await this.fetchFromImgflip();
         if (imgflipResult.length > 0) {
@@ -315,12 +375,43 @@ export class GifService {
       console.log(`🎯 SUCCESS: ${this.gifs.length} HIGH-QUALITY GIFs READY!`);
       console.log(`📊 Categories: ${this.getValidCategories().length} available`);
       console.log(`🔥 Trending: ${this.gifs.filter(g => g.trending).length} trending GIFs`);
+      console.log(`🌐 Sources: ${[...new Set(this.gifs.map(g => g.source))].join(', ')}`);
       
     } catch (error) {
       console.error('❌ Failed to load GIFs:', error);
       this.gifs = [...this.enhancedFallbackGifs];
       this.lastFetch = new Date();
       console.log(`📦 Using ${this.gifs.length} curated GIFs`);
+    }
+  }
+
+  private async fetchFromTenor(query: string, limit: number = 20): Promise<GifTemplate[]> {
+    try {
+      if (!this.TENOR_API_KEY || this.TENOR_API_KEY === 'demo_api_key') {
+        console.log(`⚠️ Tenor API key not configured, skipping ${query} search`);
+        return [];
+      }
+
+      const response = await axios.get<TenorResponse>(
+        `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${this.TENOR_API_KEY}&limit=${limit}&media_filter=gif`,
+        {
+          timeout: 10000,
+          headers: {
+            'User-Agent': 'AI-Meme-Studio-GIF-Service/1.0'
+          }
+        }
+      );
+
+      if (!response.data.results) {
+        return [];
+      }
+
+      return response.data.results
+        .filter(gif => this.isGoodTenorGif(gif))
+        .map((gif, index) => this.convertTenorGif(gif, query, index));
+    } catch (error) {
+      console.error(`Failed to fetch Tenor GIFs for "${query}":`, error);
+      return [];
     }
   }
 
@@ -355,6 +446,109 @@ export class GifService {
     } catch (error) {
       return [];
     }
+  }
+
+  private isGoodTenorGif(gif: TenorGif): boolean {
+    // Filter out inappropriate content
+    const invalidFlags = ['nsfw', 'adult', 'explicit', 'inappropriate'];
+    const hasInvalidFlag = gif.flags.some(flag => invalidFlags.includes(flag.toLowerCase()));
+    
+    if (hasInvalidFlag) return false;
+    
+    // Check if GIF has proper media formats
+    const hasGifFormat = gif.media_formats.gif || gif.media_formats.mediumgif;
+    if (!hasGifFormat) return false;
+    
+    // Check dimensions (avoid very small or very large GIFs)
+    const format = gif.media_formats.gif || gif.media_formats.mediumgif;
+    if (!format) return false;
+    
+    const [width, height] = format.dims;
+    return width >= 200 && height >= 200 && width <= 1920 && height <= 1080;
+  }
+
+  private convertTenorGif(tenorGif: TenorGif, query: string, index: number): GifTemplate {
+    const gifFormat = tenorGif.media_formats.gif || tenorGif.media_formats.mediumgif;
+    const previewFormat = tenorGif.media_formats.mediumgif || tenorGif.media_formats.tinygif;
+    
+    if (!gifFormat) {
+      throw new Error('No valid GIF format found');
+    }
+    
+    const [width, height] = gifFormat.dims;
+    const popularity = this.calculateTenorPopularity(tenorGif, index);
+    
+    return {
+      id: `tenor-${tenorGif.id}`,
+      title: tenorGif.title || tenorGif.content_description || query,
+      gifUrl: gifFormat.url,
+      previewUrl: previewFormat?.url || gifFormat.url,
+      thumbnailUrl: tenorGif.media_formats.tinygif?.url || previewFormat?.url || gifFormat.url,
+      width,
+      height,
+      duration: gifFormat.duration,
+      size: gifFormat.size,
+      tags: [...tenorGif.tags, query],
+      category: this.categorizeTenorGif(tenorGif, query),
+      source: 'tenor',
+      popularity,
+      trending: query === 'trending',
+      isAnimated: true
+    };
+  }
+
+  private calculateTenorPopularity(gif: TenorGif, index: number): number {
+    // Base popularity on creation date and position
+    const ageInDays = (Date.now() - gif.created * 1000) / (1000 * 60 * 60 * 24);
+    const recencyBonus = Math.max(0, 30 - ageInDays) * 2; // Newer GIFs get bonus
+    const positionBonus = Math.max(0, 20 - index) * 3; // Higher position gets bonus
+    
+    return Math.min(100, Math.max(60, 70 + recencyBonus + positionBonus));
+  }
+
+  private categorizeTenorGif(gif: TenorGif, query: string): string {
+    const title = gif.title.toLowerCase();
+    const tags = gif.tags.map(tag => tag.toLowerCase());
+    const allText = [...tags, title, query.toLowerCase()].join(' ');
+    
+    if (allText.includes('react') || allText.includes('emotion') || 
+        allText.includes('feel') || allText.includes('mood') ||
+        allText.includes('surprised') || allText.includes('confused') ||
+        allText.includes('excited') || allText.includes('laugh') ||
+        allText.includes('cry') || allText.includes('angry')) return 'reaction';
+    
+    if (allText.includes('dance') || allText.includes('party') || 
+        allText.includes('celebrate') || allText.includes('happy') ||
+        allText.includes('clap') || allText.includes('victory') ||
+        allText.includes('cheer')) return 'celebration';
+    
+    if (allText.includes('cute') || allText.includes('animal') || 
+        allText.includes('cat') || allText.includes('dog') ||
+        allText.includes('pet') || allText.includes('kitten') ||
+        allText.includes('puppy')) return 'animals';
+    
+    if (allText.includes('sport') || allText.includes('game') || 
+        allText.includes('goal') || allText.includes('win') ||
+        allText.includes('basketball') || allText.includes('football') ||
+        allText.includes('soccer')) return 'sports';
+    
+    if (allText.includes('love') || allText.includes('heart') || 
+        allText.includes('kiss') || allText.includes('romance') ||
+        allText.includes('couple')) return 'love';
+    
+    if (allText.includes('work') || allText.includes('office') || 
+        allText.includes('type') || allText.includes('coffee') ||
+        allText.includes('computer') || allText.includes('meeting')) return 'work';
+    
+    if (allText.includes('food') || allText.includes('eating') || 
+        allText.includes('cook') || allText.includes('hungry') ||
+        allText.includes('delicious') || allText.includes('pizza')) return 'food';
+    
+    if (allText.includes('cartoon') || allText.includes('anime') || 
+        allText.includes('character') || allText.includes('mind') ||
+        allText.includes('blown') || allText.includes('funny')) return 'entertainment';
+    
+    return 'general';
   }
 
   private isGoodMemeTemplate(meme: ImgflipTemplate): boolean {
@@ -475,13 +669,44 @@ export class GifService {
   async searchGifs(query: string): Promise<GifTemplate[]> {
     await this.ensureGifsLoaded();
     const searchLower = query.toLowerCase();
-    return this.gifs
+    
+    // First search local cache
+    let results = this.gifs
       .filter(gif => 
         gif.title.toLowerCase().includes(searchLower) ||
         gif.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
         gif.category.toLowerCase().includes(searchLower)
       )
       .sort((a, b) => b.popularity - a.popularity);
+    
+    // If we have a Tenor API key and local results are limited, search Tenor
+    if (this.TENOR_API_KEY && this.TENOR_API_KEY !== 'demo_api_key' && results.length < 20) {
+      try {
+        const tenorResults = await this.fetchFromTenor(query, 30);
+        const uniqueTenorResults = tenorResults.filter(tenorGif => 
+          !results.some(existingGif => existingGif.id === tenorGif.id)
+        );
+        results = [...results, ...uniqueTenorResults];
+      } catch (error) {
+        console.log('Tenor search failed, using local results only');
+      }
+    }
+    
+    return results;
+  }
+
+  async searchTenorGifs(query: string, limit: number = 20): Promise<GifTemplate[]> {
+    try {
+      if (!this.TENOR_API_KEY || this.TENOR_API_KEY === 'demo_api_key') {
+        console.log('⚠️ Tenor API key not configured');
+        return [];
+      }
+
+      return await this.fetchFromTenor(query, limit);
+    } catch (error) {
+      console.error('Failed to search Tenor GIFs:', error);
+      return [];
+    }
   }
 
   async getTrendingGifs(limit: number = 20): Promise<GifTemplate[]> {

@@ -1,316 +1,145 @@
-# 🎭 AI Meme Studio
+# AI Meme Studio
 
-**The Complete Meme Creation Platform** - Generate original AI memes, customize classic templates, or create animated GIF memes with our comprehensive studio suite.
+A comprehensive meme creation platform with AI-powered generation, extensive template library, and advanced GIF editing capabilities with Tenor API integration.
 
-## 🚀 What Can You Create?
+## Features
 
-### 🤖 **AI Studio** - Generate Original Memes
-Create completely original, cohesive meme images using our optimized AI system:
-- **Single Unified Generation**: No more messy character+background merging
-- **Professional Quality**: Optimized for text overlay and meme formats
-- **Custom Concepts**: Turn any idea into a meme-ready image
+### 🎨 AI Meme Generation
+- **Multi-Agent System**: Collaborative AI agents (Gag Writer, Casting Director, Set Designer) work together to create memes
+- **Optimized Generation**: Unified image generation with improved prompts and text overlay
+- **Template-Based Creation**: Create memes from popular templates with custom text
+- **Real-time Progress**: Live updates during meme creation process
+- **Professional Quality**: High-quality meme-ready images with proper text areas
 
-### 🎬 **GIF Studio** - Animated Meme Magic
-Browse, edit, and personalize animated GIFs:
-- **Curated Collection**: 29+ high-quality GIFs across 9 categories
-- **Advanced Editor**: Add text, effects, and personal touches (coming soon)
-- **Smart Features**: Search, favorites, sharing, and instant downloads
+### 🖼️ Template Gallery (80+ Templates)
+- **Comprehensive Collection**: 80+ popular meme templates from classic to modern
+- **Categories**: Organized by reaction, relationship, decision, mockery, opinion, surprise, intelligence, disaster, success, lifestyle, animals, philosophy, education, friendship, mischief, awkward, confession, advice, motivation, extreme, positive, negative, fantasy, sarcasm, conspiracy, presentation, hiding, planning, politics
+- **Search & Filter**: Find templates by name, tags, or category with real-time search
+- **Pagination**: Browse through extensive template library with 50 templates per page
+- **Popularity Ranking**: Templates sorted by popularity and trending status
+- **Responsive Grid**: Up to 7 columns on large screens for optimal browsing
 
-### 🖼️ **Template Gallery** - Classic Meme Formats  
-Choose from 100+ verified meme templates:
-- **Iconic Templates**: Drake, Distracted Boyfriend, SpongeBob, and more
-- **Smart Filtering**: Find templates by category and popularity
-- **Easy Customization**: Drag-and-drop text positioning with live preview
+### 🎬 GIF Studio with Tenor API Integration
+- **Tenor API Integration**: Access millions of GIFs from Tenor's vast library
+- **Real-time Search**: Search Tenor's entire GIF collection instantly
+- **Trending Content**: Access currently trending GIFs with one click
+- **Advanced Text Editor**: Full text overlay editor with fonts, colors, and effects
+- **Drag & Drop**: Intuitive text positioning and layer management
+- **Real-time Preview**: See changes instantly as you edit
+- **Export Options**: Download in multiple formats (GIF, MP4, WebM)
+- **Smart Filtering**: Automatic content filtering and quality validation
+- **Source Selection**: Choose between "All Sources" or "Tenor Only" search
 
-### 🎮 **Legacy AI Studio** - Multi-Agent System
-Experience our original AI workflow (for comparison):
-- **Set Designer**: Creates background scenes
-- **Casting Director**: Generates and composites characters  
-- **Gag Writer**: Analyzes images and writes captions
+### 🔧 MCP (Model Context Protocol) Support
+- **Claude Desktop Integration**: Use as a tool in Claude Desktop
+- **Remote Access**: Generate memes and browse templates via MCP
+- **Seamless Workflow**: Integrate meme creation into your AI workflow
+- **Multiple Methods**: generateMeme, listTemplates, createMemeFromTemplate
 
-## 🏗️ Architecture
-
-### Full-Stack TypeScript Monorepo
-```
-ai-meme-studio/
-├── apps/
-│   ├── backend/          # Node.js + Fastify API Server
-│   │   ├── services/     # AI, Template, and GIF services
-│   │   ├── routes/       # REST API endpoints
-│   │   └── database/     # SQLite storage
-│   └── frontend/         # React + Vite + Tailwind
-│       ├── components/   # Reusable UI components
-│       └── pages/        # Studio interfaces
-├── packages/
-│   └── shared-types/     # TypeScript interfaces
-└── docs/                 # API documentation
-```
-
-### 🛠️ Tech Stack
-- **Backend**: Node.js + Fastify + WebSocket + SQLite
-- **Frontend**: React + Vite + Tailwind CSS + React Query
-- **AI**: OpenAI (GPT-4) + Stability AI (Stable Diffusion)
-- **Image Processing**: Sharp + SVG text overlays
-- **Development**: TypeScript + ESLint + Concurrently
-
-## 🚀 Quick Start
+## Setup
 
 ### Prerequisites
-- **Node.js** 18+ and **npm** 9+
-- **OpenAI API Key** ([get here](https://platform.openai.com/api-keys))
-- **Stability AI API Key** ([get here](https://platform.stability.ai/account/keys))
+- Node.js 18+ 
+- npm or yarn
 
-### 1. Clone & Install
-```bash
-git clone <repository-url>
-cd ai-meme-studio
-npm install
-```
+### Installation
 
-### 2. Configure Environment
-Create `.env` in the root directory:
-```bash
-OPENAI_API_KEY=sk-your-actual-openai-key
-STABILITY_AI_API_KEY=sk-your-actual-stability-key
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ai-meme-studio
+   ```
 
-### 3. Build Shared Types
-```bash
-npm run build -w packages/shared-types
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 4. Start Development
-```bash
-# 🚀 Start everything at once (recommended)
-npm run dev
+3. **Environment Configuration**
+   
+   Create a `.env` file in the `apps/backend` directory:
+   ```env
+   # OpenAI Configuration
+   OPENAI_API_KEY=your_openai_api_key_here
+   
+   # Stability AI Configuration  
+   STABILITY_API_KEY=your_stability_api_key_here
+   
+   # Tenor API Configuration (for GIF Studio)
+   TENOR_API_KEY=your_tenor_api_key_here
+   
+   # Optional: GIPHY API (fallback)
+   GIPHY_API_KEY=your_giphy_api_key_here
+   ```
 
-# Or start services individually:
-npm run dev:backend    # API server at :3001
-npm run dev:frontend   # Web app at :5173
-```
+   **Getting API Keys:**
+   - **OpenAI**: Get from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - **Stability AI**: Get from [Stability AI Platform](https://platform.stability.ai/)
+   - **Tenor API**: Get from [Google Cloud Console](https://console.cloud.google.com/) (Tenor is now part of Google)
 
-### 5. Open Your Browser
-- **🎨 Meme Studio**: http://localhost:5173
-- **📡 API Server**: http://localhost:3001  
-- **📚 API Docs**: http://localhost:3001/docs
+4. **Start the development servers**
+   ```bash
+   # Start both frontend and backend
+   npm run dev
+   
+   # Or start individually
+   npm run dev:backend  # Backend only
+   npm run dev:frontend # Frontend only
+   ```
 
-## 🎯 Features & Status
+5. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3001
 
-### ✅ **Production Ready**
+## Tenor API Integration
 
-**🎬 GIF Studio:**
-- [x] Curated collection of 29+ high-quality GIFs
-- [x] 9 categories: reaction, celebration, animals, sports, etc.
-- [x] Advanced search with debounced input
-- [x] Favorites system with localStorage persistence
-- [x] Native sharing with clipboard fallback
-- [x] Smart pagination and lazy loading
-- [x] Robust error handling and fallbacks
-- [x] Play/pause controls for animated GIFs
-
-**🤖 Optimized AI Studio:**
-- [x] Single unified image generation
-- [x] Professional meme-ready output
-- [x] Enhanced prompt optimization
-- [x] Real-time progress tracking
-- [x] High-quality image composition
-
-**🖼️ Template Gallery:**
-- [x] 100+ verified meme templates from Imgflip
-- [x] Category filtering and search
-- [x] Drag-and-drop text positioning
-- [x] Live preview with color picker
-- [x] Responsive grid layout
-- [x] Template popularity scoring
-
-**🏗️ Infrastructure:**
-- [x] TypeScript monorepo with shared types
-- [x] SQLite database for persistence
-- [x] File system storage for images
-- [x] WebSocket real-time updates
-- [x] Comprehensive error handling
-- [x] API documentation with Swagger
-
-### 🚧 **In Development**
-
-**GIF Editor Enhancements:**
-- [ ] Full text overlay editor with fonts & colors
-- [ ] Visual effects and filters (blur, brightness, etc.)
-- [ ] Resize, crop, and rotation tools
-- [ ] Multiple export formats (GIF, MP4, WebM)
-- [ ] Advanced animation controls
-
-**Platform Features:**
-- [ ] User accounts and authentication
-- [ ] Meme sharing and social features
-- [ ] Advanced AI prompt engineering
-- [ ] Mobile app development
-- [ ] Community galleries and voting
-
-## 📊 Current Statistics
-
-### **Content Library**
-- **🎬 GIFs**: 29 curated, high-quality animated GIFs
-- **🖼️ Templates**: 100+ verified static meme templates  
-- **🏷️ Categories**: 9 content categories with smart filtering
-- **📱 Sources**: Giphy, Imgflip, curated collections
-
-### **Technical Performance**
-- **⚡ Load Time**: Sub-300ms for GIF browsing
-- **🔍 Search**: Debounced real-time search  
-- **💾 Caching**: 30-minute intelligent caching
-- **📱 Mobile**: Fully responsive design
-- **🛡️ Uptime**: 100% with robust fallback systems
-
-### **AI Capabilities**
-- **🎨 Image Generation**: Stable Diffusion via Stability AI
-- **📝 Text Generation**: GPT-4 for captions and prompts
-- **🖼️ Image Processing**: Sharp-based composition and effects
-- **⚡ Speed**: 10-20 second generation times
-
-## 🎨 Usage Guide
-
-### Creating AI Memes
-1. Click **"AI Studio"** on the homepage
-2. Enter your meme concept (e.g., "a cat coding at night")
-3. Watch real-time progress as AI generates your image
-4. Download or share your original meme
-
-### Browsing GIFs
-1. Click **"GIF Studio"** to explore animations
-2. Use search and category filters to find content
-3. Save favorites for quick access
-4. Share directly or edit for personalization
-
-### Using Templates
-1. Click **"Template Gallery"** for classic formats
-2. Select from 100+ verified meme templates
-3. Drag text to position, customize colors
-4. Download your customized meme
-
-## 🔧 Development Commands
-
-```bash
-# 🚀 Primary Commands
-npm run dev              # Start both backend + frontend
-npm run build            # Build all packages for production
-
-# 🧩 Individual Services  
-npm run dev:backend      # API server only (:3001)
-npm run dev:frontend     # React app only (:5173)
-
-# 🛠️ Utilities
-npm run clean            # Clean all build artifacts
-npm run lint             # Check code quality
-npm run test             # Run test suites (when available)
-
-# 📦 Package Management
-npm install              # Install all dependencies
-npm run build -w packages/shared-types  # Build shared types only
-```
-
-## 🌟 Key Innovations
-
-### **🔧 Robust Architecture**
-- **Graceful Degradation**: Works even when external APIs fail
-- **Smart Caching**: Reduces API calls while maintaining freshness
-- **Error Recovery**: Comprehensive error handling with user-friendly messages
-- **Performance**: Optimized for speed with lazy loading and debouncing
-
-### **🎨 User Experience**
-- **Intuitive Design**: Clean, modern interface anyone can use
-- **Real-time Feedback**: See your creations come to life instantly
-- **Cross-Platform**: Works perfectly on desktop, tablet, and mobile
-- **Accessibility**: Designed with accessibility best practices
-
-### **🤖 AI Optimization**
-- **Unified Generation**: Single cohesive images instead of problematic merging
-- **Meme-Aware**: Optimized specifically for meme creation and text overlay
-- **Fast Processing**: Streamlined pipeline for quick results
-- **Quality Focus**: Prioritizes output quality over quantity
-
-## 🚀 Getting Started Tips
-
-1. **Start with Templates**: Try the Template Gallery first to get familiar
-2. **Explore GIFs**: Browse the GIF Studio for animated content inspiration  
-3. **Experiment with AI**: Use the AI Studio for completely original content
-4. **Save Favorites**: Use the favorites system to build your personal collection
-5. **Share Your Creations**: Use built-in sharing features to show off your memes
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how to get started:
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-3. **Make** your changes with proper TypeScript types
-4. **Test** your changes thoroughly
-5. **Commit** with clear messages: `git commit -m 'Add amazing feature'`
-6. **Push** to your branch: `git push origin feature/amazing-feature`
-7. **Open** a Pull Request with a detailed description
-
-### Development Guidelines
-- Use TypeScript for all new code
-- Follow the existing code style and patterns
-- Add proper error handling and user feedback
-- Test on both desktop and mobile
-- Update documentation for new features
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-## 🎯 Roadmap
-
-### **Short Term** (Next 2-4 weeks)
-- [ ] Complete GIF editor with text overlays
-- [ ] Add more visual effects and filters
-- [ ] Implement multiple export formats
-- [ ] Enhanced mobile experience
-
-### **Medium Term** (1-3 months)  
-- [ ] User authentication and profiles
-- [ ] Community features and sharing
-- [ ] Advanced AI prompt engineering
-- [ ] Template contribution system
-
-### **Long Term** (3-6 months)
-- [ ] Mobile app development
-- [ ] Advanced analytics and insights
-- [ ] AI model fine-tuning
-- [ ] Multi-language support
-
----
-
-## 🎭 **Ready to Create Viral Memes?**
-
-Whether you want to:
-- 🤖 **Generate** completely original AI memes
-- 🎬 **Customize** animated GIFs with personal touches  
-- 🖼️ **Use** classic proven meme templates
-- 🎮 **Experiment** with our multi-agent AI system
-
-**AI Meme Studio has everything you need!**
-
-Start creating at http://localhost:5173 after setup! 🚀✨ 
-
-## 🧩 Claude Desktop & MCP Integration (NEW!)
-
-You can now use AI Meme Studio as a tool in Claude Desktop via the Model Context Protocol (MCP).
+The GIF Studio now includes full Tenor API integration, providing access to millions of high-quality GIFs:
 
 ### Features
-- **AI Meme Generation**: Generate memes from a concept and description (`generateMeme`)
-- **Template Meme Generation**: Create memes from classic templates with custom text and placement (`createMemeFromTemplate`)
-- **Template Listing**: Browse all available meme templates (`listTemplates`)
+- **Real-time Search**: Search Tenor's entire GIF library with instant results
+- **Trending GIFs**: Access currently trending content with one-click button
+- **Category Browsing**: Browse by reactions, animals, sports, work, celebration, etc.
+- **High-Quality Formats**: Multiple resolution options (full, medium, tiny)
+- **Smart Filtering**: Automatic content filtering and quality checks
+- **Source Selection**: Choose between searching all sources or Tenor only
+- **Visual Indicators**: Special badges and styling for Tenor content
 
-### How to Enable
-1. **Start your backend** (API server) on port 3001:
-   ```bash
-   npm run dev:backend
-   # or
-   npm start
-   ```
-2. **Edit your Claude Desktop config** (`claude_desktop_config.json`):
+### Setup
+1. Get a Tenor API key from Google Cloud Console
+2. Add `TENOR_API_KEY=your_key_here` to your `.env` file
+3. Restart the backend server
+
+### Usage
+- Use the "Tenor Only" search option to search exclusively in Tenor's library
+- Click "Trending from Tenor" to see currently popular GIFs
+- All Tenor GIFs are marked with a special gradient badge for easy identification
+- Mixed search combines your curated collection with Tenor results
+
+## Template Gallery Expansion
+
+The template gallery has been significantly expanded with 80+ carefully curated meme templates:
+
+### Template Categories
+- **Top Tier Classics** (95-100 popularity): Drake Pointing, Distracted Boyfriend, Woman Yelling at Cat
+- **Classic Internet Memes** (80-90 popularity): One Does Not Simply, Grumpy Cat, Success Kid
+- **Modern Classics** (75-85 popularity): Roll Safe, Hide the Pain Harold, Matrix Morpheus
+- **Social Media Era** (70-80 popularity): Socially Awkward Penguin, Confession Bear, Courage Wolf
+- **Pop Culture References** (65-75 popularity): Simpsons, Family Guy, Lord of the Rings
+- **Modern Internet Culture** (60-70 popularity): Gru, Politics, Entertainment
+
+### Features
+- **Category Counts**: Shows template count for each category
+- **Enhanced Grid**: Up to 7 columns on large screens
+- **Improved Search**: Real-time search across names, tags, and categories
+- **Better Pagination**: 50 templates per page for efficient browsing
+
+## MCP (Model Context Protocol) Setup
+
+### For Claude Desktop Users
+
+1. **Configure Claude Desktop**
+   
+   Add this to your `claude_desktop_config.json`:
    ```json
    {
      "mcpServers": {
@@ -323,41 +152,137 @@ You can now use AI Meme Studio as a tool in Claude Desktop via the Model Context
    ```
    
    **Note**: Replace `/usr/bin/node` with the output of `which node` on your terminal to get the correct Node.js path for your system.
-3. **Restart Claude Desktop**. You should see "ai-meme-studio" in the tools menu.
 
-### Available MCP Methods
-- `generateMeme`: AI meme generation from concept/description
-  - Params: `{ concept: string, description: string }`
-- `createMemeFromTemplate`: Template meme generation with optional custom text placement
-  - Params: `{ templateId: string, topText?: string, bottomText?: string, customText?: string, topTextPosition?: object, bottomTextPosition?: object }`
-- `listTemplates`: List all meme templates (with pagination/sorting)
+2. **Start the backend**
+   ```bash
+   npm run dev:backend
+   ```
 
-### Example Usage
-**Generate an AI meme:**
-```json
-{
-  "method": "generateMeme",
-  "arguments": {
-    "concept": "AI takes over the world",
-    "description": "A robot sitting on a throne"
-  }
-}
+3. **Available MCP Methods**
+   - `generateMeme(concept, description)` - Create AI-generated memes
+   - `listTemplates(page?, limit?, sort?, source?)` - Browse meme templates
+   - `createMemeFromTemplate(templateId, topText?, bottomText?, customText?)` - Create from template
+
+### Example Usage in Claude Desktop
 ```
-**Create a meme from a template with custom placement:**
-```json
-{
-  "method": "createMemeFromTemplate",
-  "arguments": {
-    "templateId": "drake-pointing",
-    "topText": "AI",
-    "bottomText": "Humans",
-    "topTextPosition": { "x": 100, "y": 50, "width": 400, "height": 100 }
-  }
-}
+@ai-meme-studio generateMeme concept="programmer debugging" description="A developer trying to fix a bug at 3 AM"
+@ai-meme-studio listTemplates page=1 limit=10 sort=popularity
+@ai-meme-studio createMemeFromTemplate templateId="drake-pointing" topText="AI" bottomText="Humans"
 ```
 
-### What Was Added
-- `/mcp/describe` and `/mcp/invoke` endpoints in the backend
-- MCP manifest and config instructions
-- Support for both AI and template meme generation via Claude Desktop
-- Optional custom text placement for template memes 
+## API Endpoints
+
+### Meme Generation
+- `POST /api/memes` - Create new meme
+- `GET /api/memes/:id` - Get meme status
+- `GET /api/memes` - List all memes
+
+### Templates
+- `GET /api/templates` - List templates with pagination
+- `GET /api/templates/categories` - Get available categories
+- `GET /api/templates/search/:query` - Search templates
+
+### GIF Studio
+- `GET /api/gifs` - List GIFs with pagination
+- `GET /api/gifs/search/:query` - Search all GIFs
+- `GET /api/gifs/tenor/search/:query` - Search Tenor GIFs specifically
+- `GET /api/gifs/tenor/trending` - Get trending Tenor GIFs
+- `GET /api/gifs/categories` - Get GIF categories
+
+### GIF Editor
+- `POST /api/gifs/:id/edit` - Create editable GIF
+- `GET /api/edited-gifs/:id` - Get edited GIF
+- `POST /api/edited-gifs/:id/text` - Add text overlay
+- `PUT /api/edited-gifs/:id/text/:overlayId` - Update text overlay
+- `DELETE /api/edited-gifs/:id/text/:overlayId` - Remove text overlay
+- `POST /api/edited-gifs/:id/render` - Render final GIF
+- `GET /api/edited-gifs/:id/export` - Export GIF
+
+### MCP Endpoints
+- `POST /mcp/describe` - Get available MCP methods
+- `POST /mcp/invoke` - Execute MCP methods
+
+## Development
+
+### Project Structure
+```
+ai-meme-studio/
+├── apps/
+│   ├── backend/          # Fastify API server
+│   │   ├── src/
+│   │   │   ├── agents/   # AI agents for meme generation
+│   │   │   ├── routes/   # API routes
+│   │   │   ├── services/ # Business logic
+│   │   │   └── server.ts # Main server file
+│   │   └── mcp-server.js # MCP protocol handler
+│   └── frontend/         # React frontend
+│       ├── src/
+│       │   ├── components/
+│       │   └── App.tsx
+│       └── package.json
+├── packages/
+│   └── shared-types/     # Shared TypeScript types
+└── package.json
+```
+
+### Key Technologies
+- **Backend**: Fastify, TypeScript, OpenAI API, Stability AI, Tenor API
+- **Frontend**: React, TypeScript, Tailwind CSS, Vite
+- **AI**: Multi-agent system with specialized roles
+- **Image Processing**: Sharp, SVG manipulation
+- **GIF Processing**: Advanced text overlay and effects
+- **MCP**: Model Context Protocol for Claude Desktop integration
+
+### Development Commands
+```bash
+# Start development servers
+npm run dev              # Start both backend + frontend
+npm run dev:backend      # Backend only
+npm run dev:frontend     # Frontend only
+
+# Build for production
+npm run build
+
+# Utilities
+npm run clean            # Clean build artifacts
+npm run lint             # Check code quality
+```
+
+## Recent Updates
+
+### v2.0 - Major Feature Expansion
+- **Tenor API Integration**: Access to millions of GIFs from Tenor
+- **Template Gallery Expansion**: 80+ meme templates across 28 categories
+- **Enhanced Search**: Real-time search with source selection
+- **Improved UI**: Better grid layouts and visual indicators
+- **MCP Integration**: Full Claude Desktop support
+
+### v1.5 - GIF Studio Enhancements
+- **Advanced Text Editor**: Full text overlay editor with fonts and colors
+- **Drag & Drop**: Intuitive text positioning and layer management
+- **Export Options**: Multiple format support (GIF, MP4, WebM)
+- **Real-time Preview**: Instant preview of changes
+
+### v1.0 - Core Features
+- **AI Meme Generation**: Multi-agent system for original meme creation
+- **Template Gallery**: Classic meme template collection
+- **Basic GIF Studio**: Curated GIF collection with editing capabilities
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+### Development Guidelines
+- Use TypeScript for all new code
+- Follow existing code style and patterns
+- Add proper error handling and user feedback
+- Test on both desktop and mobile
+- Update documentation for new features
+
+## License
+
+MIT License - see LICENSE file for details. 

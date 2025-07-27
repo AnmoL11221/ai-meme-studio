@@ -36,6 +36,7 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
   const [selectedGif, setSelectedGif] = useState<GifTemplate | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [searchSource, setSearchSource] = useState<'all' | 'tenor'>('all');
 
   const GIFS_PER_PAGE = 24;
 
@@ -58,7 +59,7 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
 
   useEffect(() => {
     fetchGifs();
-  }, [selectedCategory, currentPage, searchQuery]);
+  }, [selectedCategory, currentPage, searchQuery, searchSource]);
 
   useEffect(() => {
     fetchCategories();
@@ -85,7 +86,11 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
       }
       
       if (searchQuery.trim()) {
-        url = `/api/gifs/search/${encodeURIComponent(searchQuery)}?limit=${GIFS_PER_PAGE}`;
+        if (searchSource === 'tenor') {
+          url = `/api/gifs/tenor/search/${encodeURIComponent(searchQuery)}?limit=${GIFS_PER_PAGE}`;
+        } else {
+          url = `/api/gifs/search/${encodeURIComponent(searchQuery)}?limit=${GIFS_PER_PAGE}`;
+        }
       }
 
       const response = await fetch(url);
@@ -308,8 +313,21 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
                 <h1 className="text-3xl font-bold text-gray-800">GIF Studio</h1>
               </div>
             </div>
-            <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-              {totalGifs} GIFs available
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={async () => {
+                  setSearchSource('tenor');
+                  setSearchQuery('trending');
+                  setCurrentPage(1);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Trending from Tenor</span>
+              </button>
+              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                {totalGifs} GIFs available
+              </div>
             </div>
           </div>
 
@@ -324,6 +342,18 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
                 onChange={(e) => debouncedSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
+            </div>
+
+            {/* Search Source Selector */}
+            <div className="flex items-center space-x-2">
+              <select
+                value={searchSource}
+                onChange={(e) => setSearchSource(e.target.value as 'all' | 'tenor')}
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+              >
+                <option value="all">All Sources</option>
+                <option value="tenor">Tenor Only</option>
+              </select>
             </div>
 
             {/* Category Filter */}
@@ -462,8 +492,12 @@ const GifCard: React.FC<GifCardProps> = ({
       )}
 
       {/* Source Badge */}
-      <div className="absolute top-2 right-2 z-10 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full capitalize">
-        {gif.source}
+      <div className={`absolute top-2 right-2 z-10 text-white text-xs px-2 py-1 rounded-full capitalize ${
+        gif.source === 'tenor' 
+          ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+          : 'bg-black bg-opacity-50'
+      }`}>
+        {gif.source === 'tenor' ? '🎬 Tenor' : gif.source}
       </div>
 
       {/* GIF Preview */}

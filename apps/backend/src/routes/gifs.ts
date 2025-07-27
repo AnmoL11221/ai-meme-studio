@@ -135,6 +135,59 @@ export async function gifRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Search Tenor GIFs specifically
+  fastify.get('/api/gifs/tenor/search/:query', async (request, reply) => {
+    try {
+      const params = request.params as { query: string };
+      const query = request.query as { limit?: string };
+      
+      const limit = parseInt(query.limit || '20');
+      const gifs = await gifService.searchTenorGifs(params.query, limit);
+
+      reply.send({
+        success: true,
+        data: gifs,
+        meta: {
+          query: params.query,
+          source: 'tenor',
+          total: gifs.length
+        }
+      });
+    } catch (error) {
+      fastify.log.error('Error searching Tenor GIFs:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to search Tenor GIFs'
+      });
+    }
+  });
+
+  // Get Tenor trending GIFs
+  fastify.get('/api/gifs/tenor/trending', async (request, reply) => {
+    try {
+      const query = request.query as { limit?: string };
+      const limit = parseInt(query.limit || '20');
+      
+      const gifs = await gifService.searchTenorGifs('trending', limit);
+
+      reply.send({
+        success: true,
+        data: gifs,
+        meta: {
+          source: 'tenor',
+          type: 'trending',
+          total: gifs.length
+        }
+      });
+    } catch (error) {
+      fastify.log.error('Error fetching Tenor trending GIFs:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to fetch Tenor trending GIFs'
+      });
+    }
+  });
+
   // Get trending GIFs
   fastify.get('/api/gifs/trending', async (request, reply) => {
     try {
