@@ -4,6 +4,47 @@ import axios from 'axios';
 import { GifTemplate } from './gifService.js';
 import { GeneratedImage } from '@ai-meme-studio/shared-types';
 
+export interface GifFrame {
+  index: number;
+  timestamp: number;
+  duration: number;
+  data: string;
+  width: number;
+  height: number;
+}
+
+export interface PausedGifMeme {
+  id: string;
+  originalGifId: string;
+  selectedFrame: GifFrame;
+  textOverlays: GifTextOverlay[];
+  effects: GifEffect[];
+  outputFormat: 'png' | 'jpg' | 'webp' | 'gif' | 'mp4' | 'webm';
+  quality: number;
+  width?: number;
+  height?: number;
+  title: string;
+  createdAt: Date;
+  data?: string;
+  url?: string;
+}
+
+export interface ExportOptions {
+  format: 'png' | 'jpg' | 'webp' | 'gif' | 'mp4' | 'webm';
+  quality: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+  loop?: boolean;
+  optimize?: boolean;
+  metadata?: {
+    title?: string;
+    description?: string;
+    author?: string;
+    tags?: string[];
+  };
+}
+
 export interface GifTextOverlay {
   id: string;
   text: string;
@@ -107,6 +148,7 @@ export interface EditedGif {
 
 export class GifEditor {
   private editedGifs: Map<string, EditedGif> = new Map();
+  private pausedGifMemes: Map<string, PausedGifMeme> = new Map();
   private availableFonts: FontOption[] = [];
   private colorPalettes: ColorPalette[] = [];
   private textPresets: TextPreset[] = [];
@@ -509,7 +551,7 @@ export class GifEditor {
       switch (editedGif.outputFormat) {
         case 'gif':
           outputBuffer = await processedImage
-            .gif({ quality: editedGif.quality })
+            .gif()
             .toBuffer();
           break;
         case 'webm':
@@ -520,7 +562,7 @@ export class GifEditor {
           break;
         default:
           outputBuffer = await processedImage
-            .gif({ quality: editedGif.quality })
+            .gif()
             .toBuffer();
       }
 
@@ -906,5 +948,327 @@ export class GifEditor {
 
     console.log(`📦 Exporting GIF ${gifId} as ${format}`);
     return Buffer.from(editedGif.data, 'base64');
+  }
+
+  async extractGifFrames(gifUrl: string): Promise<GifFrame[]> {
+    try {
+      console.log(`🎬 Extracting frames from GIF: ${gifUrl}`);
+      
+      const gifBuffer = await this.downloadGif(gifUrl);
+      const frames: GifFrame[] = [];
+      
+      const gif = sharp(gifBuffer, { animated: true });
+      const metadata = await gif.metadata();
+      
+      if (!metadata.pages || metadata.pages === 0) {
+        throw new Error('No frames found in GIF');
+      }
+
+      const pageCount = Array.isArray(metadata.pages) ? metadata.pages.length : 1;
+      
+      for (let i = 0; i < pageCount; i++) {
+        const frame = gif.clone();
+        const frameBuffer = await frame.toBuffer();
+        const frameData = frameBuffer.toString('base64');
+        
+        frames.push({
+          index: i,
+          timestamp: i * (Array.isArray(metadata.delay) ? metadata.delay[0] || 100 : metadata.delay || 100),
+          duration: Array.isArray(metadata.delay) ? metadata.delay[0] || 100 : metadata.delay || 100,
+          data: frameData,
+          width: metadata.width || 0,
+          height: metadata.height || 0
+        });
+      }
+
+      console.log(`✅ Extracted ${frames.length} frames from GIF`);
+      return frames;
+    } catch (error) {
+      console.error(`❌ Error extracting GIF frames:`, error);
+      throw new Error(`Failed to extract GIF frames: ${error}`);
+    }
+  }
+
+  async createPausedGifMeme(
+    gifId: string, 
+    frameIndex: number, 
+    title?: string
+  ): Promise<PausedGifMeme> {
+    const editedGif = this.editedGifs.get(gifId);
+    if (!editedGif) {
+      throw new Error('Edited GIF not found');
+    }
+
+    const frames = await this.extractGifFrames(editedGif.originalGif.gifUrl);
+    
+    if (frameIndex >= frames.length) {
+      throw new Error(`Frame index ${frameIndex} is out of range. GIF has ${frames.length} frames`);
+    }
+
+    const selectedFrame = frames[frameIndex];
+    const memeId = uuidv4();
+
+    const pausedGifMeme: PausedGifMeme = {
+      id: memeId,
+      originalGifId: gifId,
+      selectedFrame,
+      textOverlays: [],
+      effects: [],
+      outputFormat: 'png',
+      quality: 90,
+      width: selectedFrame.width,
+      height: selectedFrame.height,
+      title: title || `Paused GIF Meme - Frame ${frameIndex}`,
+      createdAt: new Date()
+    };
+
+    this.pausedGifMemes.set(memeId, pausedGifMeme);
+    console.log(`⏸️ Created paused GIF meme ${memeId} from frame ${frameIndex}`);
+    
+    return pausedGifMeme;
+  }
+
+  async addTextToPausedMeme(
+    memeId: string, 
+    overlay: Omit<GifTextOverlay, 'id'>
+  ): Promise<GifTextOverlay> {
+    const meme = this.pausedGifMemes.get(memeId);
+    if (!meme) {
+      throw new Error('Paused GIF meme not found');
+    }
+
+    const newOverlay: GifTextOverlay = {
+      ...overlay,
+      id: uuidv4()
+    };
+
+    meme.textOverlays.push(newOverlay);
+    console.log(`✏️ Added text overlay to paused meme ${memeId}`);
+    
+    return newOverlay;
+  }
+
+  async updatePausedMemeText(
+    memeId: string, 
+    overlayId: string, 
+    updates: Partial<Omit<GifTextOverlay, 'id'>>
+  ): Promise<GifTextOverlay> {
+    const meme = this.pausedGifMemes.get(memeId);
+    if (!meme) {
+      throw new Error('Paused GIF meme not found');
+    }
+
+    const overlayIndex = meme.textOverlays.findIndex(o => o.id === overlayId);
+    if (overlayIndex === -1) {
+      throw new Error('Text overlay not found');
+    }
+
+    meme.textOverlays[overlayIndex] = {
+      ...meme.textOverlays[overlayIndex],
+      ...updates
+    };
+
+    console.log(`✏️ Updated text overlay ${overlayId} in paused meme ${memeId}`);
+    return meme.textOverlays[overlayIndex];
+  }
+
+  async removePausedMemeText(memeId: string, overlayId: string): Promise<boolean> {
+    const meme = this.pausedGifMemes.get(memeId);
+    if (!meme) {
+      throw new Error('Paused GIF meme not found');
+    }
+
+    const initialLength = meme.textOverlays.length;
+    meme.textOverlays = meme.textOverlays.filter(o => o.id !== overlayId);
+    
+    const removed = meme.textOverlays.length < initialLength;
+    if (removed) {
+      console.log(`🗑️ Removed text overlay ${overlayId} from paused meme ${memeId}`);
+    }
+    
+    return removed;
+  }
+
+  async renderPausedMeme(memeId: string): Promise<PausedGifMeme> {
+    const meme = this.pausedGifMemes.get(memeId);
+    if (!meme) {
+      throw new Error('Paused GIF meme not found');
+    }
+
+    try {
+      console.log(`🎨 Rendering paused GIF meme ${memeId}`);
+      
+      const frameBuffer = Buffer.from(meme.selectedFrame.data, 'base64');
+      let image = sharp(frameBuffer);
+
+      if (meme.textOverlays.length > 0) {
+        const svgOverlays = meme.textOverlays.map(overlay => 
+          this.createTextOverlaySvg(overlay, meme.selectedFrame.width, meme.selectedFrame.height)
+        );
+
+        const combinedSvg = `
+          <svg width="${meme.selectedFrame.width}" height="${meme.selectedFrame.height}" xmlns="http://www.w3.org/2000/svg">
+            ${svgOverlays.join('')}
+          </svg>
+        `;
+
+        image = image.composite([{
+          input: Buffer.from(combinedSvg),
+          top: 0,
+          left: 0
+        }]);
+      }
+
+      for (const effect of meme.effects) {
+        image = await this.applyEffect(image, effect);
+      }
+
+      if (meme.width && meme.height) {
+        image = image.resize(meme.width, meme.height);
+      }
+
+      let outputBuffer: Buffer;
+      switch (meme.outputFormat) {
+        case 'png':
+          outputBuffer = await image.png({ quality: meme.quality }).toBuffer();
+          break;
+        case 'jpg':
+          outputBuffer = await image.jpeg({ quality: meme.quality }).toBuffer();
+          break;
+        case 'webp':
+          outputBuffer = await image.webp({ quality: meme.quality }).toBuffer();
+          break;
+        case 'gif':
+          outputBuffer = await image.gif().toBuffer();
+          break;
+        default:
+          outputBuffer = await image.png({ quality: meme.quality }).toBuffer();
+      }
+
+      meme.data = outputBuffer.toString('base64');
+      meme.url = `data:image/${meme.outputFormat};base64,${meme.data}`;
+      
+      console.log(`✅ Rendered paused GIF meme ${memeId} as ${meme.outputFormat}`);
+      return meme;
+    } catch (error) {
+      console.error(`❌ Error rendering paused GIF meme:`, error);
+      throw new Error(`Failed to render paused GIF meme: ${error}`);
+    }
+  }
+
+  async exportPausedMeme(memeId: string, options: ExportOptions): Promise<Buffer> {
+    const meme = await this.renderPausedMeme(memeId);
+    
+    if (!meme.data) {
+      throw new Error('Paused meme not rendered');
+    }
+
+    try {
+      console.log(`📦 Exporting paused meme ${memeId} as ${options.format}`);
+      
+      let image = sharp(Buffer.from(meme.data, 'base64'));
+
+      if (options.width && options.height) {
+        image = image.resize(options.width, options.height);
+      }
+
+      let outputBuffer: Buffer;
+      switch (options.format) {
+        case 'png':
+          outputBuffer = await image.png({ 
+            quality: options.quality,
+            compressionLevel: options.optimize ? 9 : 6
+          }).toBuffer();
+          break;
+        case 'jpg':
+          outputBuffer = await image.jpeg({ 
+            quality: options.quality,
+            progressive: options.optimize
+          }).toBuffer();
+          break;
+        case 'webp':
+          outputBuffer = await image.webp({ 
+            quality: options.quality,
+            effort: options.optimize ? 6 : 4
+          }).toBuffer();
+          break;
+        case 'gif':
+          outputBuffer = await image.gif().toBuffer();
+          break;
+        case 'mp4':
+        case 'webm':
+          outputBuffer = await image.png().toBuffer();
+          break;
+        default:
+          outputBuffer = await image.png({ quality: options.quality }).toBuffer();
+      }
+
+      return outputBuffer;
+    } catch (error) {
+      console.error(`❌ Error exporting paused meme:`, error);
+      throw new Error(`Failed to export paused meme: ${error}`);
+    }
+  }
+
+  getPausedMeme(memeId: string): PausedGifMeme | undefined {
+    return this.pausedGifMemes.get(memeId);
+  }
+
+  getAllPausedMemes(): PausedGifMeme[] {
+    return Array.from(this.pausedGifMemes.values());
+  }
+
+  deletePausedMeme(memeId: string): boolean {
+    const deleted = this.pausedGifMemes.delete(memeId);
+    if (deleted) {
+      console.log(`🗑️ Deleted paused GIF meme ${memeId}`);
+    }
+    return deleted;
+  }
+
+  async duplicatePausedMeme(memeId: string, newTitle?: string): Promise<PausedGifMeme> {
+    const original = this.pausedGifMemes.get(memeId);
+    if (!original) {
+      throw new Error('Paused GIF meme not found');
+    }
+
+    const duplicated: PausedGifMeme = {
+      ...original,
+      id: uuidv4(),
+      title: newTitle || `${original.title} (Copy)`,
+      createdAt: new Date(),
+      data: undefined,
+      url: undefined
+    };
+
+    this.pausedGifMemes.set(duplicated.id, duplicated);
+    console.log(`📋 Duplicated paused GIF meme ${memeId} -> ${duplicated.id}`);
+    
+    return duplicated;
+  }
+
+  getExportFormats(): Array<{ format: string; description: string; supported: boolean }> {
+    return [
+      { format: 'png', description: 'PNG - Lossless, transparent background', supported: true },
+      { format: 'jpg', description: 'JPEG - Compressed, smaller file size', supported: true },
+      { format: 'webp', description: 'WebP - Modern format, excellent compression', supported: true },
+      { format: 'gif', description: 'GIF - Animated, widely supported', supported: true },
+      { format: 'mp4', description: 'MP4 - Video format (basic support)', supported: false },
+      { format: 'webm', description: 'WebM - Web video format (basic support)', supported: false }
+    ];
+  }
+
+  getDefaultExportOptions(): ExportOptions {
+    return {
+      format: 'png',
+      quality: 90,
+      optimize: true,
+      loop: true,
+      metadata: {
+        title: 'AI Meme Studio Export',
+        author: 'AI Meme Studio',
+        tags: ['meme', 'gif', 'ai-generated']
+      }
+    };
   }
 } 

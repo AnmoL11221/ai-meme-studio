@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ArrowLeft, Search, Filter, Sparkles, Download, Edit3, Play, Pause, Heart, Share2 } from 'lucide-react';
+import { GifPauseStudio } from './GifPauseStudio';
 
 interface GifTemplate {
   id: string;
@@ -35,12 +36,12 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
   const [totalGifs, setTotalGifs] = useState(0);
   const [selectedGif, setSelectedGif] = useState<GifTemplate | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [showPauseStudio, setShowPauseStudio] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [searchSource, setSearchSource] = useState<'all' | 'tenor'>('all');
 
   const GIFS_PER_PAGE = 24;
 
-  // Debounced search
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const debouncedSearch = useCallback((query: string) => {
@@ -65,7 +66,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
     fetchCategories();
   }, []);
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (searchTimeout) {
@@ -178,6 +178,11 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
     }
   };
 
+  const handlePauseGif = async (gif: GifTemplate) => {
+    setSelectedGif(gif);
+    setShowPauseStudio(true);
+  };
+
   const toggleFavorite = useCallback((gifId: string) => {
     setFavorites(prev => {
       const newFavorites = new Set(prev);
@@ -216,7 +221,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
     return `${(ms / 1000).toFixed(1)}s`;
   }, []);
 
-  // Memoized pagination component
   const PaginationComponent = useMemo(() => {
     if (totalPages <= 1) return null;
 
@@ -293,9 +297,17 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
     return <GifEditor gif={selectedGif} onBack={() => setShowEditor(false)} />;
   }
 
+  if (showPauseStudio && selectedGif) {
+    return <GifPauseStudio 
+      gifId={selectedGif.id} 
+      gifUrl={selectedGif.gifUrl} 
+      gifTitle={selectedGif.title} 
+      onBack={() => setShowPauseStudio(false)} 
+    />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      {/* Header */}
       <div className="bg-white shadow-lg border-b-4 border-purple-500">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-6">
@@ -331,9 +343,7 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -344,7 +354,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
               />
             </div>
 
-            {/* Search Source Selector */}
             <div className="flex items-center space-x-2">
               <select
                 value={searchSource}
@@ -356,7 +365,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
               </select>
             </div>
 
-            {/* Category Filter */}
             <div className="flex items-center space-x-2">
               <Filter className="h-5 w-5 text-gray-600" />
               <select
@@ -376,7 +384,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -417,13 +424,13 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
               )}
             </div>
 
-            {/* GIF Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
               {gifs.map((gif) => (
                 <GifCard
                   key={gif.id}
                   gif={gif}
                   onEdit={() => handleEditGif(gif)}
+                  onPause={() => handlePauseGif(gif)}
                   onToggleFavorite={() => toggleFavorite(gif.id)}
                   isFavorite={favorites.has(gif.id)}
                   formatFileSize={formatFileSize}
@@ -432,7 +439,6 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
               ))}
             </div>
 
-            {/* Pagination */}
             {PaginationComponent}
           </>
         )}
@@ -444,6 +450,7 @@ export const GifStudio: React.FC<GifStudioProps> = ({ onBack }) => {
 interface GifCardProps {
   gif: GifTemplate;
   onEdit: () => void;
+  onPause: () => void;
   onToggleFavorite: () => void;
   isFavorite: boolean;
   formatFileSize: (bytes?: number) => string;
@@ -453,6 +460,7 @@ interface GifCardProps {
 const GifCard: React.FC<GifCardProps> = ({ 
   gif, 
   onEdit, 
+  onPause,
   onToggleFavorite, 
   isFavorite, 
   formatFileSize, 
@@ -484,14 +492,12 @@ const GifCard: React.FC<GifCardProps> = ({
 
   return (
     <div className="group relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-      {/* Trending Badge */}
       {gif.trending && (
         <div className="absolute top-2 left-2 z-10 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
           🔥 Trending
         </div>
       )}
 
-      {/* Source Badge */}
       <div className={`absolute top-2 right-2 z-10 text-white text-xs px-2 py-1 rounded-full capitalize ${
         gif.source === 'tenor' 
           ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
@@ -500,7 +506,6 @@ const GifCard: React.FC<GifCardProps> = ({
         {gif.source === 'tenor' ? '🎬 Tenor' : gif.source}
       </div>
 
-      {/* GIF Preview */}
       <div className="relative aspect-square overflow-hidden bg-gray-100">
         {!imageError ? (
           <>
@@ -529,7 +534,6 @@ const GifCard: React.FC<GifCardProps> = ({
           </div>
         )}
 
-        {/* Overlay Controls */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
             <button
@@ -576,11 +580,20 @@ const GifCard: React.FC<GifCardProps> = ({
             >
               <Edit3 className="h-4 w-4" />
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPause();
+              }}
+              className="p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-all"
+              title="Pause GIF & Create Meme"
+            >
+              <Pause className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* GIF Info */}
       <div className="p-4">
         <h3 className="font-semibold text-gray-800 truncate mb-2" title={gif.title}>
           {gif.title}
@@ -609,7 +622,6 @@ const GifCard: React.FC<GifCardProps> = ({
           </div>
         </div>
 
-        {/* Tags */}
         {gif.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
             {gif.tags.slice(0, 3).map((tag, index) => (
