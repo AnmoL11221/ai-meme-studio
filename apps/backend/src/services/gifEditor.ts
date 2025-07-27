@@ -22,6 +22,60 @@ export interface GifTextOverlay {
   animation?: 'none' | 'fadeIn' | 'slideIn' | 'bounce' | 'typewriter';
   startTime?: number;
   duration?: number;
+  fontWeight?: 'normal' | 'bold' | 'bolder' | 'lighter' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
+  fontStyle?: 'normal' | 'italic' | 'oblique';
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  letterSpacing?: number;
+  lineHeight?: number;
+  textShadow?: {
+    x: number;
+    y: number;
+    blur: number;
+    color: string;
+  };
+  backgroundColorOpacity?: number;
+  borderRadius?: number;
+  padding?: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  border?: {
+    width: number;
+    color: string;
+    style: 'solid' | 'dashed' | 'dotted';
+  };
+  gradient?: {
+    type: 'linear' | 'radial';
+    colors: Array<{ color: string; offset: number }>;
+    angle?: number;
+  };
+  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
+}
+
+export interface FontOption {
+  name: string;
+  family: string;
+  category: 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
+  weight: string[];
+  style: string[];
+  preview?: string;
+}
+
+export interface ColorPalette {
+  name: string;
+  colors: string[];
+  category: 'meme' | 'professional' | 'vibrant' | 'pastel' | 'dark' | 'custom';
+}
+
+export interface TextPreset {
+  id: string;
+  name: string;
+  description: string;
+  category: 'meme' | 'caption' | 'title' | 'subtitle' | 'custom';
+  settings: Partial<GifTextOverlay>;
+  preview?: string;
 }
 
 export interface GifEffect {
@@ -53,6 +107,171 @@ export interface EditedGif {
 
 export class GifEditor {
   private editedGifs: Map<string, EditedGif> = new Map();
+  private availableFonts: FontOption[] = [];
+  private colorPalettes: ColorPalette[] = [];
+  private textPresets: TextPreset[] = [];
+
+  constructor() {
+    this.initializeFonts();
+    this.initializeColorPalettes();
+    this.initializeTextPresets();
+  }
+
+  private initializeFonts(): void {
+    this.availableFonts = [
+      { name: 'Impact', family: 'Impact, Charcoal, sans-serif', category: 'display', weight: ['normal'], style: ['normal'], preview: 'IMPACT' },
+      { name: 'Arial', family: 'Arial, Helvetica, sans-serif', category: 'sans-serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Arial' },
+      { name: 'Helvetica', family: 'Helvetica, Arial, sans-serif', category: 'sans-serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Helvetica' },
+      { name: 'Times New Roman', family: 'Times New Roman, Times, serif', category: 'serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Times' },
+      { name: 'Georgia', family: 'Georgia, Times, serif', category: 'serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Georgia' },
+      { name: 'Verdana', family: 'Verdana, Geneva, sans-serif', category: 'sans-serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Verdana' },
+      { name: 'Comic Sans MS', family: 'Comic Sans MS, cursive', category: 'handwriting', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Comic' },
+      { name: 'Courier New', family: 'Courier New, Courier, monospace', category: 'monospace', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Courier' },
+      { name: 'Trebuchet MS', family: 'Trebuchet MS, sans-serif', category: 'sans-serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Trebuchet' },
+      { name: 'Lucida Console', family: 'Lucida Console, Monaco, monospace', category: 'monospace', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Console' },
+      { name: 'Brush Script MT', family: 'Brush Script MT, cursive', category: 'handwriting', weight: ['normal'], style: ['normal', 'italic'], preview: 'Brush' },
+      { name: 'Papyrus', family: 'Papyrus, fantasy', category: 'display', weight: ['normal'], style: ['normal'], preview: 'Papyrus' },
+      { name: 'Chalkduster', family: 'Chalkduster, fantasy', category: 'display', weight: ['normal'], style: ['normal'], preview: 'Chalk' },
+      { name: 'Marker Felt', family: 'Marker Felt, fantasy', category: 'display', weight: ['normal'], style: ['normal'], preview: 'Marker' },
+      { name: 'Futura', family: 'Futura, Trebuchet MS, Arial, sans-serif', category: 'sans-serif', weight: ['normal', 'bold'], style: ['normal', 'italic'], preview: 'Futura' }
+    ];
+  }
+
+  private initializeColorPalettes(): void {
+    this.colorPalettes = [
+      {
+        name: 'Meme Classic',
+        category: 'meme',
+        colors: ['#FFFFFF', '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF']
+      },
+      {
+        name: 'Professional',
+        category: 'professional',
+        colors: ['#2C3E50', '#34495E', '#7F8C8D', '#95A5A6', '#BDC3C7', '#ECF0F1', '#FFFFFF', '#000000']
+      },
+      {
+        name: 'Vibrant',
+        category: 'vibrant',
+        colors: ['#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#3498DB', '#9B59B6', '#1ABC9C', '#E91E63']
+      },
+      {
+        name: 'Pastel',
+        category: 'pastel',
+        colors: ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA', '#FFB3F7', '#B3FFE6', '#F7B3FF', '#E6B3FF']
+      },
+      {
+        name: 'Dark Theme',
+        category: 'dark',
+        colors: ['#1A1A1A', '#2D2D2D', '#404040', '#666666', '#999999', '#CCCCCC', '#FFFFFF', '#FF6B6B']
+      },
+      {
+        name: 'Neon',
+        category: 'vibrant',
+        colors: ['#FF0080', '#00FF80', '#8000FF', '#FF8000', '#0080FF', '#80FF00', '#FF0080', '#00FFFF']
+      }
+    ];
+  }
+
+  private initializeTextPresets(): void {
+    this.textPresets = [
+      {
+        id: 'meme-top',
+        name: 'Meme Top Text',
+        description: 'Classic meme top text style',
+        category: 'meme',
+        settings: {
+          fontFamily: 'Impact, Charcoal, sans-serif',
+          fontSize: 48,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 3,
+          textAlign: 'center',
+          fontWeight: 'bold',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColorOpacity: 0.5,
+          padding: { top: 10, right: 20, bottom: 10, left: 20 },
+          borderRadius: 5
+        }
+      },
+      {
+        id: 'meme-bottom',
+        name: 'Meme Bottom Text',
+        description: 'Classic meme bottom text style',
+        category: 'meme',
+        settings: {
+          fontFamily: 'Impact, Charcoal, sans-serif',
+          fontSize: 48,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 3,
+          textAlign: 'center',
+          fontWeight: 'bold',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColorOpacity: 0.5,
+          padding: { top: 10, right: 20, bottom: 10, left: 20 },
+          borderRadius: 5
+        }
+      },
+      {
+        id: 'caption',
+        name: 'Caption Style',
+        description: 'Clean caption text',
+        category: 'caption',
+        settings: {
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontSize: 24,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 2,
+          textAlign: 'center',
+          fontWeight: 'normal',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backgroundColorOpacity: 0.7,
+          padding: { top: 8, right: 16, bottom: 8, left: 16 },
+          borderRadius: 8
+        }
+      },
+      {
+        id: 'title',
+        name: 'Title Style',
+        description: 'Bold title text',
+        category: 'title',
+        settings: {
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          fontSize: 36,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 2,
+          textAlign: 'center',
+          fontWeight: 'bold',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColorOpacity: 0.6,
+          padding: { top: 12, right: 24, bottom: 12, left: 24 },
+          borderRadius: 10
+        }
+      },
+      {
+        id: 'subtitle',
+        name: 'Subtitle Style',
+        description: 'Elegant subtitle text',
+        category: 'subtitle',
+        settings: {
+          fontFamily: 'Georgia, Times, serif',
+          fontSize: 20,
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 1,
+          textAlign: 'center',
+          fontWeight: 'normal',
+          fontStyle: 'italic',
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backgroundColorOpacity: 0.4,
+          padding: { top: 6, right: 12, bottom: 6, left: 12 },
+          borderRadius: 6
+        }
+      }
+    ];
+  }
 
   async createEditableGif(gifTemplate: GifTemplate, title?: string): Promise<EditedGif> {
     const editedGif: EditedGif = {
@@ -315,7 +534,11 @@ export class GifEditor {
   }
 
   private createTextOverlaySvg(overlay: GifTextOverlay, canvasWidth: number, canvasHeight: number): string {
-    const { text, fontSize, color, backgroundColor, strokeColor, strokeWidth, opacity, rotation } = overlay;
+    const {
+      text, fontSize, color, backgroundColor, strokeColor, strokeWidth, opacity, rotation,
+      fontWeight, fontStyle, textAlign, letterSpacing, lineHeight, textShadow,
+      backgroundColorOpacity, borderRadius, padding, border, gradient, blendMode
+    } = overlay;
     
     const safeText = text
       .replace(/&/g, '&amp;')
@@ -326,38 +549,127 @@ export class GifEditor {
 
     const transform = rotation ? `rotate(${rotation} ${overlay.x + overlay.width/2} ${overlay.y + overlay.height/2})` : '';
     
-    let textElement = `
-      <text 
-        x="${overlay.x + overlay.width/2}" 
-        y="${overlay.y + overlay.height/2 + fontSize/3}"
-        font-family="${overlay.fontFamily}" 
-        font-size="${fontSize}"
-        fill="${color}"
-        text-anchor="middle"
-        dominant-baseline="middle"
-        opacity="${opacity}"
-        ${transform ? `transform="${transform}"` : ''}
-        ${strokeColor && strokeWidth ? `stroke="${strokeColor}" stroke-width="${strokeWidth}"` : ''}
-      >${safeText}</text>
-    `;
+    let textAnchor = 'middle';
+    let dominantBaseline = 'middle';
+    
+    switch (textAlign) {
+      case 'left':
+        textAnchor = 'start';
+        break;
+      case 'right':
+        textAnchor = 'end';
+        break;
+      case 'justify':
+        textAnchor = 'middle';
+        break;
+      default:
+        textAnchor = 'middle';
+    }
 
-    if (backgroundColor) {
-      textElement = `
-        <rect 
-          x="${overlay.x}" 
-          y="${overlay.y}" 
-          width="${overlay.width}" 
-          height="${overlay.height}"
-          fill="${backgroundColor}"
-          opacity="${opacity * 0.8}"
-          ${transform ? `transform="${transform}"` : ''}
-        />
-        ${textElement}
+    const textAttributes = [
+      `font-family="${overlay.fontFamily}"`,
+      `font-size="${fontSize}"`,
+      `fill="${color}"`,
+      `text-anchor="${textAnchor}"`,
+      `dominant-baseline="${dominantBaseline}"`,
+      `opacity="${opacity}"`,
+      fontWeight ? `font-weight="${fontWeight}"` : '',
+      fontStyle ? `font-style="${fontStyle}"` : '',
+      letterSpacing ? `letter-spacing="${letterSpacing}"` : '',
+      lineHeight ? `line-height="${lineHeight}"` : '',
+      strokeColor && strokeWidth ? `stroke="${strokeColor}" stroke-width="${strokeWidth}"` : '',
+      transform ? `transform="${transform}"` : '',
+      blendMode && blendMode !== 'normal' ? `style="mix-blend-mode: ${blendMode}"` : ''
+    ].filter(Boolean).join(' ');
+
+    let textElement = `<text x="${overlay.x + overlay.width/2}" y="${overlay.y + overlay.height/2 + fontSize/3}" ${textAttributes}>${safeText}</text>`;
+
+    if (textShadow) {
+      const shadowFilter = `filter="url(#shadow-${overlay.id})"`;
+      textElement = textElement.replace('>', ` ${shadowFilter}>`);
+    }
+
+    let backgroundElement = '';
+    const bgOpacity = backgroundColorOpacity !== undefined ? backgroundColorOpacity : 0.8;
+    
+    if (backgroundColor || border || borderRadius || padding) {
+      const paddingValues = padding || { top: 0, right: 0, bottom: 0, left: 0 };
+      const borderValues = border || { width: 0, color: 'transparent', style: 'solid' };
+      const radius = borderRadius || 0;
+      
+      const rectX = overlay.x - paddingValues.left;
+      const rectY = overlay.y - paddingValues.top;
+      const rectWidth = overlay.width + paddingValues.left + paddingValues.right;
+      const rectHeight = overlay.height + paddingValues.top + paddingValues.bottom;
+      
+      let rectAttributes = [
+        `x="${rectX}"`,
+        `y="${rectY}"`,
+        `width="${rectWidth}"`,
+        `height="${rectHeight}"`,
+        `opacity="${opacity * bgOpacity}"`,
+        transform ? `transform="${transform}"` : ''
+      ];
+
+      if (backgroundColor) {
+        if (gradient) {
+          const gradientId = `gradient-${overlay.id}`;
+          rectAttributes.push(`fill="url(#${gradientId})"`);
+        } else {
+          rectAttributes.push(`fill="${backgroundColor}"`);
+        }
+      } else {
+        rectAttributes.push('fill="transparent"');
+      }
+
+      if (borderValues.width > 0) {
+        rectAttributes.push(`stroke="${borderValues.color}"`);
+        rectAttributes.push(`stroke-width="${borderValues.width}"`);
+        rectAttributes.push(`stroke-dasharray="${borderValues.style === 'dashed' ? '5,5' : borderValues.style === 'dotted' ? '2,2' : 'none'}"`);
+      }
+
+      if (radius > 0) {
+        rectAttributes.push(`rx="${radius}"`);
+        rectAttributes.push(`ry="${radius}"`);
+      }
+
+      backgroundElement = `<rect ${rectAttributes.join(' ')} />`;
+    }
+
+    let defs = '';
+    if (textShadow) {
+      defs = `
+        <defs>
+          <filter id="shadow-${overlay.id}" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="${textShadow.x}" dy="${textShadow.y}" stdDeviation="${textShadow.blur}" flood-color="${textShadow.color}" flood-opacity="0.8"/>
+          </filter>
+        </defs>
+      `;
+    }
+
+    if (gradient) {
+      const gradientId = `gradient-${overlay.id}`;
+      const gradientElement = gradient.type === 'linear' 
+        ? `<linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">`
+        : `<radialGradient id="${gradientId}" cx="50%" cy="50%" r="50%">`;
+      
+      const gradientStops = gradient.colors.map(color => 
+        `<stop offset="${color.offset}%" stop-color="${color.color}"/>`
+      ).join('');
+      
+      defs += `
+        <defs>
+          ${gradientElement}
+            ${gradientStops}
+          </${gradient.type === 'linear' ? 'linearGradient' : 'radialGradient'}>
+        </defs>
       `;
     }
 
     return `
       <svg width="${canvasWidth}" height="${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
+        ${defs}
+        ${backgroundElement}
         ${textElement}
       </svg>
     `;
@@ -478,15 +790,111 @@ export class GifEditor {
       width: Math.floor(width * 0.8),
       height: Math.floor(height * 0.2),
       fontSize: Math.max(20, Math.floor(width / 20)),
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: 'Impact, Charcoal, sans-serif',
       color: '#FFFFFF',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'transparent',
       strokeColor: '#000000',
       strokeWidth: 2,
       opacity: 1,
       rotation: 0,
-      animation: 'none'
+      animation: 'none',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      textAlign: 'center',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      backgroundColorOpacity: 0,
+      borderRadius: 0,
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      blendMode: 'normal'
     };
+  }
+
+  getAvailableFonts(): FontOption[] {
+    return this.availableFonts;
+  }
+
+  getColorPalettes(): ColorPalette[] {
+    return this.colorPalettes;
+  }
+
+  getTextPresets(): TextPreset[] {
+    return this.textPresets;
+  }
+
+  async applyTextPreset(gifId: string, overlayId: string, presetId: string): Promise<GifTextOverlay> {
+    const editedGif = this.editedGifs.get(gifId);
+    if (!editedGif) {
+      throw new Error('Edited GIF not found');
+    }
+
+    const preset = this.textPresets.find(p => p.id === presetId);
+    if (!preset) {
+      throw new Error('Text preset not found');
+    }
+
+    const overlayIndex = editedGif.textOverlays.findIndex(o => o.id === overlayId);
+    if (overlayIndex === -1) {
+      throw new Error('Text overlay not found');
+    }
+
+    editedGif.textOverlays[overlayIndex] = {
+      ...editedGif.textOverlays[overlayIndex],
+      ...preset.settings
+    };
+
+    console.log(`🎨 Applied text preset "${preset.name}" to overlay ${overlayId}`);
+    return editedGif.textOverlays[overlayIndex];
+  }
+
+  async duplicateTextOverlay(gifId: string, overlayId: string): Promise<GifTextOverlay> {
+    const editedGif = this.editedGifs.get(gifId);
+    if (!editedGif) {
+      throw new Error('Edited GIF not found');
+    }
+
+    const originalOverlay = editedGif.textOverlays.find(o => o.id === overlayId);
+    if (!originalOverlay) {
+      throw new Error('Text overlay not found');
+    }
+
+    const duplicatedOverlay: GifTextOverlay = {
+      ...originalOverlay,
+      id: uuidv4(),
+      x: originalOverlay.x + 20,
+      y: originalOverlay.y + 20,
+      text: `${originalOverlay.text} (Copy)`
+    };
+
+    editedGif.textOverlays.push(duplicatedOverlay);
+    console.log(`📋 Duplicated text overlay ${overlayId} -> ${duplicatedOverlay.id}`);
+    
+    return duplicatedOverlay;
+  }
+
+  async reorderTextOverlays(gifId: string, overlayIds: string[]): Promise<boolean> {
+    const editedGif = this.editedGifs.get(gifId);
+    if (!editedGif) {
+      throw new Error('Edited GIF not found');
+    }
+
+    const orderedOverlays: GifTextOverlay[] = [];
+    const existingOverlays = new Map(editedGif.textOverlays.map(o => [o.id, o]));
+
+    for (const id of overlayIds) {
+      const overlay = existingOverlays.get(id);
+      if (overlay) {
+        orderedOverlays.push(overlay);
+      }
+    }
+
+    if (orderedOverlays.length !== editedGif.textOverlays.length) {
+      return false;
+    }
+
+    editedGif.textOverlays = orderedOverlays;
+    console.log(`🔄 Reordered text overlays for GIF ${gifId}`);
+    return true;
   }
 
   async exportGif(gifId: string, format: 'gif' | 'mp4' | 'webm' = 'gif'): Promise<Buffer> {

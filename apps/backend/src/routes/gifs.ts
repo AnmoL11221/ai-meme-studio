@@ -318,6 +318,36 @@ export async function gifRoutes(fastify: FastifyInstance) {
         strokeWidth?: number;
         opacity?: number;
         rotation?: number;
+        fontWeight?: string;
+        fontStyle?: string;
+        textAlign?: string;
+        letterSpacing?: number;
+        lineHeight?: number;
+        textShadow?: {
+          x: number;
+          y: number;
+          blur: number;
+          color: string;
+        };
+        backgroundColorOpacity?: number;
+        borderRadius?: number;
+        padding?: {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        };
+        border?: {
+          width: number;
+          color: string;
+          style: string;
+        };
+        gradient?: {
+          type: string;
+          colors: Array<{ color: string; offset: number }>;
+          angle?: number;
+        };
+        blendMode?: string;
       };
 
       const overlay = await gifEditor.addTextOverlay(params.id, {
@@ -327,14 +357,26 @@ export async function gifRoutes(fastify: FastifyInstance) {
         width: body.width,
         height: body.height,
         fontSize: body.fontSize || 24,
-        fontFamily: body.fontFamily || 'Arial, sans-serif',
+        fontFamily: body.fontFamily || 'Impact, Charcoal, sans-serif',
         color: body.color || '#FFFFFF',
         backgroundColor: body.backgroundColor,
         strokeColor: body.strokeColor || '#000000',
         strokeWidth: body.strokeWidth || 2,
         opacity: body.opacity || 1,
         rotation: body.rotation || 0,
-        animation: 'none'
+        animation: 'none',
+        fontWeight: body.fontWeight || 'bold',
+        fontStyle: body.fontStyle || 'normal',
+        textAlign: body.textAlign || 'center',
+        letterSpacing: body.letterSpacing || 0,
+        lineHeight: body.lineHeight || 1.2,
+        textShadow: body.textShadow,
+        backgroundColorOpacity: body.backgroundColorOpacity || 0.7,
+        borderRadius: body.borderRadius || 5,
+        padding: body.padding || { top: 10, right: 20, bottom: 10, left: 20 },
+        border: body.border,
+        gradient: body.gradient,
+        blendMode: body.blendMode || 'normal'
       });
 
       reply.send({
@@ -369,6 +411,36 @@ export async function gifRoutes(fastify: FastifyInstance) {
         strokeWidth: number;
         opacity: number;
         rotation: number;
+        fontWeight: string;
+        fontStyle: string;
+        textAlign: string;
+        letterSpacing: number;
+        lineHeight: number;
+        textShadow: {
+          x: number;
+          y: number;
+          blur: number;
+          color: string;
+        };
+        backgroundColorOpacity: number;
+        borderRadius: number;
+        padding: {
+          top: number;
+          right: number;
+          bottom: number;
+          left: number;
+        };
+        border: {
+          width: number;
+          color: string;
+          style: string;
+        };
+        gradient: {
+          type: string;
+          colors: Array<{ color: string; offset: number }>;
+          angle?: number;
+        };
+        blendMode: string;
       }>;
 
       const overlay = await gifEditor.updateTextOverlay(params.id, params.overlayId, body);
@@ -643,6 +715,137 @@ export async function gifRoutes(fastify: FastifyInstance) {
       reply.status(500).send({
         success: false,
         error: 'Failed to get default text overlay'
+      });
+    }
+  });
+
+  // Get available fonts for text editor
+  fastify.get('/api/gif-fonts', async (request, reply) => {
+    try {
+      const fonts = gifEditor.getAvailableFonts();
+
+      reply.send({
+        success: true,
+        data: fonts
+      });
+    } catch (error) {
+      fastify.log.error('Error fetching available fonts:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to fetch available fonts'
+      });
+    }
+  });
+
+  // Get color palettes for text editor
+  fastify.get('/api/gif-color-palettes', async (request, reply) => {
+    try {
+      const palettes = gifEditor.getColorPalettes();
+
+      reply.send({
+        success: true,
+        data: palettes
+      });
+    } catch (error) {
+      fastify.log.error('Error fetching color palettes:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to fetch color palettes'
+      });
+    }
+  });
+
+  // Get text presets for text editor
+  fastify.get('/api/gif-text-presets', async (request, reply) => {
+    try {
+      const presets = gifEditor.getTextPresets();
+
+      reply.send({
+        success: true,
+        data: presets
+      });
+    } catch (error) {
+      fastify.log.error('Error fetching text presets:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to fetch text presets'
+      });
+    }
+  });
+
+  // Apply text preset to overlay
+  fastify.post('/api/edited-gifs/:id/text/:overlayId/preset/:presetId', async (request, reply) => {
+    try {
+      const params = request.params as { id: string; overlayId: string; presetId: string };
+      
+      const overlay = await gifEditor.applyTextPreset(params.id, params.overlayId, params.presetId);
+
+      reply.send({
+        success: true,
+        data: overlay,
+        message: 'Text preset applied successfully'
+      });
+    } catch (error) {
+      fastify.log.error('Error applying text preset:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to apply text preset'
+      });
+    }
+  });
+
+  // Duplicate text overlay
+  fastify.post('/api/edited-gifs/:id/text/:overlayId/duplicate', async (request, reply) => {
+    try {
+      const params = request.params as { id: string; overlayId: string };
+      
+      const duplicatedOverlay = await gifEditor.duplicateTextOverlay(params.id, params.overlayId);
+
+      reply.send({
+        success: true,
+        data: duplicatedOverlay,
+        message: 'Text overlay duplicated successfully'
+      });
+    } catch (error) {
+      fastify.log.error('Error duplicating text overlay:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to duplicate text overlay'
+      });
+    }
+  });
+
+  // Reorder text overlays
+  fastify.put('/api/edited-gifs/:id/text/reorder', async (request, reply) => {
+    try {
+      const params = request.params as { id: string };
+      const body = request.body as { overlayIds: string[] };
+      
+      if (!Array.isArray(body.overlayIds)) {
+        return reply.status(400).send({
+          success: false,
+          error: 'overlayIds must be an array'
+        });
+      }
+
+      const success = await gifEditor.reorderTextOverlays(params.id, body.overlayIds);
+      
+      if (!success) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Invalid overlay IDs provided'
+        });
+      }
+
+      reply.send({
+        success: true,
+        message: 'Text overlays reordered successfully'
+      });
+    } catch (error) {
+      fastify.log.error('Error reordering text overlays:', error);
+      reply.status(500).send({
+        success: false,
+        error: 'Failed to reorder text overlays'
       });
     }
   });

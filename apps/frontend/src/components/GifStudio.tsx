@@ -611,15 +611,186 @@ const GifCard: React.FC<GifCardProps> = ({
 // Enhanced GIF Editor placeholder with more features
 const GifEditor: React.FC<{ gif: GifTemplate; onBack: () => void }> = ({ gif, onBack }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [editedGif, setEditedGif] = useState<any>(null);
+  const [textOverlays, setTextOverlays] = useState<any[]>([]);
+  const [selectedOverlay, setSelectedOverlay] = useState<any>(null);
+  const [fonts, setFonts] = useState<any[]>([]);
+  const [colorPalettes, setColorPalettes] = useState<any[]>([]);
+  const [textPresets, setTextPresets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string>(gif.gifUrl);
+
+  useEffect(() => {
+    initializeEditor();
+  }, []);
+
+  const initializeEditor = async () => {
+    try {
+      setLoading(true);
+      
+      const [fontsRes, palettesRes, presetsRes, editedGifRes] = await Promise.all([
+        fetch('/api/gif-fonts'),
+        fetch('/api/gif-color-palettes'),
+        fetch('/api/gif-text-presets'),
+        fetch(`/api/gifs/${gif.id}/edit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: `Edited ${gif.title}` })
+        })
+      ]);
+
+      const [fontsData, palettesData, presetsData, editedGifData] = await Promise.all([
+        fontsRes.json(),
+        palettesRes.json(),
+        presetsRes.json(),
+        editedGifRes.json()
+      ]);
+
+      if (fontsData.success) setFonts(fontsData.data);
+      if (palettesData.success) setColorPalettes(palettesData.data);
+      if (presetsData.success) setTextPresets(presetsData.data);
+      if (editedGifData.success) {
+        setEditedGif(editedGifData.data);
+        setTextOverlays(editedGifData.data.textOverlays || []);
+      }
+    } catch (error) {
+      console.error('Failed to initialize editor:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTextOverlay = async () => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: 'New Text',
+          x: 50,
+          y: 50,
+          width: 200,
+          height: 60,
+          fontSize: 24,
+          fontFamily: 'Impact, Charcoal, sans-serif',
+          color: '#FFFFFF',
+          strokeColor: '#000000',
+          strokeWidth: 2,
+          opacity: 1,
+          rotation: 0,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          backgroundColor: 'transparent',
+          backgroundColorOpacity: 0
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setTextOverlays(prev => [...prev, result.data]);
+        setSelectedOverlay(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to add text overlay:', error);
+    }
+  };
+
+  const updateTextOverlay = async (overlayId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/text/${overlayId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setTextOverlays(prev => prev.map(o => o.id === overlayId ? result.data : o));
+        setSelectedOverlay(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to update text overlay:', error);
+    }
+  };
+
+  const removeTextOverlay = async (overlayId: string) => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/text/${overlayId}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setTextOverlays(prev => prev.filter(o => o.id !== overlayId));
+        if (selectedOverlay?.id === overlayId) {
+          setSelectedOverlay(null);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to remove text overlay:', error);
+    }
+  };
+
+  const applyTextPreset = async (overlayId: string, presetId: string) => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/text/${overlayId}/preset/${presetId}`, {
+        method: 'POST'
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setTextOverlays(prev => prev.map(o => o.id === overlayId ? result.data : o));
+        setSelectedOverlay(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to apply text preset:', error);
+    }
+  };
+
+  const reorderTextOverlays = async (overlayIds: string[]) => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/text/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ overlayIds })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // Update the order in the backend
+        console.log('Text overlays reordered successfully');
+      }
+    } catch (error) {
+      console.error('Failed to reorder text overlays:', error);
+    }
+  };
+
+  const renderGif = async () => {
+    try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/render`, {
+        method: 'POST'
+      });
+
+      const result = await response.json();
+      if (result.success && result.data.url) {
+        setPreviewUrl(result.data.url);
+      }
+    } catch (error) {
+      console.error('Failed to render GIF:', error);
+    }
+  };
 
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
+      const response = await fetch(`/api/edited-gifs/${editedGif.id}/export`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = gif.gifUrl;
-      link.download = `${gif.title.replace(/[^a-zA-Z0-9]/g, '-')}.gif`;
-      link.target = '_blank';
+      link.href = url;
+      link.download = `${editedGif.title.replace(/[^a-zA-Z0-9]/g, '-')}.gif`;
       link.click();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed. Please try again.');
@@ -628,112 +799,416 @@ const GifEditor: React.FC<{ gif: GifTemplate; onBack: () => void }> = ({ gif, on
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <span className="ml-3 text-lg text-gray-600">Loading editor...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <button
-            onClick={onBack}
-            className="flex items-center space-x-2 text-purple-600 hover:text-purple-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to Gallery</span>
-          </button>
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-white shadow-lg border-b-4 border-purple-500">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={onBack}
+                className="flex items-center space-x-2 text-purple-600 hover:text-purple-800 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span>Back to Gallery</span>
+              </button>
+              <div className="h-8 w-px bg-gray-300"></div>
+              <h1 className="text-2xl font-bold text-gray-800">🎬 GIF Editor</h1>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={renderGif}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Render Preview
+              </button>
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              >
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </button>
+            </div>
+          </div>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            🎬 Editing: {gif.title}
-          </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <img
-                src={gif.gifUrl}
-                alt={gif.title}
-                className="w-full rounded-lg shadow-md"
-              />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Preview Area */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Preview</h2>
+              <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={previewUrl}
+                  alt={gif.title}
+                  className="w-full h-auto"
+                />
+                                 {textOverlays.map((overlay) => (
+                   <div
+                     key={overlay.id}
+                     className={`absolute cursor-move ${
+                       selectedOverlay?.id === overlay.id ? 'ring-2 ring-purple-500' : ''
+                     }`}
+                     style={{
+                       left: overlay.x,
+                       top: overlay.y,
+                       width: overlay.width,
+                       height: overlay.height,
+                       transform: `rotate(${overlay.rotation || 0}deg)`,
+                       userSelect: 'none'
+                     }}
+                     onClick={() => setSelectedOverlay(overlay)}
+                     draggable
+                     onDragStart={(e) => {
+                       e.dataTransfer.setData('text/plain', overlay.id);
+                       e.dataTransfer.effectAllowed = 'move';
+                     }}
+                     onDragOver={(e) => {
+                       e.preventDefault();
+                       e.dataTransfer.dropEffect = 'move';
+                     }}
+                     onDrop={(e) => {
+                       e.preventDefault();
+                       const draggedId = e.dataTransfer.getData('text/plain');
+                       if (draggedId !== overlay.id) {
+                         // Reorder overlays
+                         const draggedIndex = textOverlays.findIndex(o => o.id === draggedId);
+                         const targetIndex = textOverlays.findIndex(o => o.id === overlay.id);
+                         if (draggedIndex !== -1 && targetIndex !== -1) {
+                           const newOverlays = [...textOverlays];
+                           const [draggedOverlay] = newOverlays.splice(draggedIndex, 1);
+                           newOverlays.splice(targetIndex, 0, draggedOverlay);
+                           setTextOverlays(newOverlays);
+                           
+                           // Update the order in the backend
+                           const newOrder = newOverlays.map(o => o.id);
+                           reorderTextOverlays(newOrder);
+                         }
+                       }
+                     }}
+                     onMouseDown={(e) => {
+                       if (e.button !== 0) return; // Only left mouse button
+                       
+                       const startX = e.clientX;
+                       const startY = e.clientY;
+                       const startOverlayX = overlay.x;
+                       const startOverlayY = overlay.y;
+                       
+                       const handleMouseMove = (moveEvent: MouseEvent) => {
+                         const deltaX = moveEvent.clientX - startX;
+                         const deltaY = moveEvent.clientY - startY;
+                         
+                         updateTextOverlay(overlay.id, {
+                           x: startOverlayX + deltaX,
+                           y: startOverlayY + deltaY
+                         });
+                       };
+                       
+                       const handleMouseUp = () => {
+                         document.removeEventListener('mousemove', handleMouseMove);
+                         document.removeEventListener('mouseup', handleMouseUp);
+                       };
+                       
+                       document.addEventListener('mousemove', handleMouseMove);
+                       document.addEventListener('mouseup', handleMouseUp);
+                     }}
+                   >
+                     <div
+                       className="w-full h-full flex items-center justify-center text-center p-2"
+                       style={{
+                         fontFamily: overlay.fontFamily,
+                         fontSize: overlay.fontSize,
+                         color: overlay.color,
+                         fontWeight: overlay.fontWeight,
+                         fontStyle: overlay.fontStyle,
+                         textAlign: overlay.textAlign,
+                         letterSpacing: overlay.letterSpacing,
+                         lineHeight: overlay.lineHeight,
+                         opacity: overlay.opacity,
+                         textShadow: overlay.textShadow ? 
+                           `${overlay.textShadow.x}px ${overlay.textShadow.y}px ${overlay.textShadow.blur}px ${overlay.textShadow.color}` : 
+                           undefined,
+                         backgroundColor: overlay.backgroundColor || 'transparent',
+                         borderRadius: overlay.borderRadius,
+                         padding: overlay.padding ? 
+                           `${overlay.padding.top}px ${overlay.padding.right}px ${overlay.padding.bottom}px ${overlay.padding.left}px` : 
+                           undefined,
+                         border: overlay.border ? 
+                           `${overlay.border.width}px ${overlay.border.style} ${overlay.border.color}` : 
+                           'none'
+                       }}
+                     >
+                       {overlay.text}
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Editor Panel */}
+          <div className="space-y-6">
+            {/* Text Overlays List */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Text Overlays</h3>
+                <button
+                  onClick={addTextOverlay}
+                  className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  + Add Text
+                </button>
+              </div>
               
-              {/* GIF Info */}
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {textOverlays.map((overlay) => (
+                  <div
+                    key={overlay.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedOverlay?.id === overlay.id
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedOverlay(overlay)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{overlay.text}</p>
+                        <p className="text-xs text-gray-500">
+                          {overlay.fontFamily.split(',')[0]} • {overlay.fontSize}px
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeTextOverlay(overlay.id);
+                        }}
+                        className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {textOverlays.length === 0 && (
+                  <p className="text-gray-500 text-center py-4">No text overlays yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Text Editor */}
+            {selectedOverlay && (
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Text Editor</h3>
+                
+                <div className="space-y-4">
+                  {/* Text Content */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Text Content
+                    </label>
+                    <textarea
+                      value={selectedOverlay.text}
+                      onChange={(e) => updateTextOverlay(selectedOverlay.id, { text: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Font Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Font Family
+                    </label>
+                    <select
+                      value={selectedOverlay.fontFamily}
+                      onChange={(e) => updateTextOverlay(selectedOverlay.id, { fontFamily: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {fonts.map((font) => (
+                        <option key={font.name} value={font.family}>
+                          {font.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Font Size */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Font Size: {selectedOverlay.fontSize}px
+                    </label>
+                    <input
+                      type="range"
+                      min="12"
+                      max="120"
+                      value={selectedOverlay.fontSize}
+                      onChange={(e) => updateTextOverlay(selectedOverlay.id, { fontSize: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Color Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Text Color
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="color"
+                        value={selectedOverlay.color}
+                        onChange={(e) => updateTextOverlay(selectedOverlay.id, { color: e.target.value })}
+                        className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                      />
+                      <div className="flex-1 grid grid-cols-4 gap-1">
+                        {colorPalettes[0]?.colors.slice(0, 8).map((color: string, index: number) => (
+                          <button
+                            key={index}
+                            onClick={() => updateTextOverlay(selectedOverlay.id, { color })}
+                            className="w-8 h-8 rounded border border-gray-300"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stroke Color */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stroke Color
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="color"
+                        value={selectedOverlay.strokeColor}
+                        onChange={(e) => updateTextOverlay(selectedOverlay.id, { strokeColor: e.target.value })}
+                        className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={selectedOverlay.strokeWidth}
+                        onChange={(e) => updateTextOverlay(selectedOverlay.id, { strokeWidth: parseInt(e.target.value) })}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-gray-500 w-8 text-center">
+                        {selectedOverlay.strokeWidth}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Text Presets */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quick Styles
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {textPresets.slice(0, 4).map((preset) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => applyTextPreset(selectedOverlay.id, preset.id)}
+                          className="p-2 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Position Controls */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        X Position
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedOverlay.x}
+                        onChange={(e) => updateTextOverlay(selectedOverlay.id, { x: parseInt(e.target.value) })}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Y Position
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedOverlay.y}
+                        onChange={(e) => updateTextOverlay(selectedOverlay.id, { y: parseInt(e.target.value) })}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Rotation */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rotation: {selectedOverlay.rotation || 0}°
+                    </label>
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      value={selectedOverlay.rotation || 0}
+                      onChange={(e) => updateTextOverlay(selectedOverlay.id, { rotation: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Opacity */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Opacity: {Math.round((selectedOverlay.opacity || 1) * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={selectedOverlay.opacity || 1}
+                      onChange={(e) => updateTextOverlay(selectedOverlay.id, { opacity: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* GIF Info */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">GIF Info</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium">Title:</span>
+                  <span>{gif.title}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Dimensions:</span>
                   <span>{gif.width} × {gif.height}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Source:</span>
-                  <span className="capitalize">{gif.source}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Category:</span>
                   <span className="capitalize">{gif.category}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium">Type:</span>
-                  <span>{gif.isAnimated ? 'Animated GIF' : 'Static Image'}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">🎨 GIF Editor</h3>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="text-blue-800 font-medium mb-2">🚧 Advanced Editor Coming Soon!</p>
-                  <p className="text-blue-700 text-sm">
-                    We're building an amazing editor with all the features you need.
-                  </p>
-                </div>
-                
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-700">Planned Features:</h4>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Add custom text overlays with fonts & colors</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Apply visual effects and filters</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Resize, crop, and rotate</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Adjust timing and playback speed</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      <span>Export in multiple formats (GIF, MP4, WebM)</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700">Available Actions:</h4>
-                <div className="space-y-2">
-                  <button
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="w-full flex items-center justify-center space-x-2 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-                  >
-                    <Download className="h-5 w-5" />
-                    <span>{isDownloading ? 'Downloading...' : 'Download Original'}</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out this awesome GIF: ${gif.title}`)}&url=${encodeURIComponent(gif.gifUrl)}`;
-                      window.open(url, '_blank');
-                    }}
-                    className="w-full flex items-center justify-center space-x-2 bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    <span>Share on Twitter</span>
-                  </button>
+                  <span className="font-medium">Text Overlays:</span>
+                  <span>{textOverlays.length}</span>
                 </div>
               </div>
             </div>
