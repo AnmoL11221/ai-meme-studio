@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import readline from 'readline';
+import fetch from 'node-fetch';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -85,11 +86,102 @@ rl.on('line', async (line) => {
 
         const result = await response.json();
 
-        console.log(JSON.stringify({
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { content: [{ type: 'text', text: JSON.stringify(result) }] }
-        }));
+        if (name === 'generateMeme' && result.url) {
+          try {
+            const imageResponse = await fetch(result.url);
+            
+            if (!imageResponse.ok) {
+              throw new Error(`Image not found: ${imageResponse.status} ${imageResponse.statusText}`);
+            }
+            
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const base64Image = Buffer.from(imageBuffer).toString('base64');
+            const mimeType = imageResponse.headers.get('content-type') || 'image/png';
+            
+            console.log(JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { 
+                content: [
+                  { 
+                    type: 'text', 
+                    text: `🎭 Meme Generated Successfully!\n\n**Concept:** ${result.concept || 'N/A'}\n**Text:** ${result.customText || 'N/A'}\n**Status:** ${result.status}\n\nHere's your meme:` 
+                  },
+                  { 
+                    type: 'image', 
+                    image: {
+                      data: base64Image,
+                      mimeType: mimeType
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: `\n**Suggested Captions:**\n${(result.captions || []).map((caption, i) => `${i + 1}. ${caption}`).join('\n')}`
+                  }
+                ] 
+              }
+            }));
+          } catch (imageError) {
+            console.log(JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { 
+                content: [
+                  { 
+                    type: 'text', 
+                    text: `🎭 Meme Generated Successfully!\n\n**Concept:** ${result.concept || 'N/A'}\n**Text:** ${result.customText || 'N/A'}\n**Status:** ${result.status}\n\n**Image URL:** ${result.url}\n\n**Note:** The image was generated but couldn't be displayed directly. You can view it at the URL above.\n\n**Suggested Captions:**\n${(result.captions || []).map((caption, i) => `${i + 1}. ${caption}`).join('\n')}` 
+                  }
+                ] 
+              }
+            }));
+          }
+        } else if (name === 'createMemeFromTemplate' && result.url) {
+          try {
+            const imageResponse = await fetch(result.url);
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const base64Image = Buffer.from(imageBuffer).toString('base64');
+            const mimeType = imageResponse.headers.get('content-type') || 'image/png';
+            
+            console.log(JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { 
+                content: [
+                  { 
+                    type: 'text', 
+                    text: `🎨 Template Meme Created!\n\n**Template ID:** ${result.templateId}\n**Top Text:** ${result.topText || 'N/A'}\n**Bottom Text:** ${result.bottomText || 'N/A'}\n**Custom Text:** ${result.customText || 'N/A'}\n\nHere's your meme:` 
+                  },
+                  { 
+                    type: 'image', 
+                    image: {
+                      data: base64Image,
+                      mimeType: mimeType
+                    }
+                  }
+                ] 
+              }
+            }));
+          } catch (imageError) {
+            console.log(JSON.stringify({
+              jsonrpc: '2.0',
+              id: message.id,
+              result: { 
+                content: [
+                  { 
+                    type: 'text', 
+                    text: `🎨 Template Meme Created!\n\n**Template ID:** ${result.templateId}\n**Top Text:** ${result.topText || 'N/A'}\n**Bottom Text:** ${result.bottomText || 'N/A'}\n**Custom Text:** ${result.customText || 'N/A'}\n\n**Image URL:** ${result.url}` 
+                  }
+                ] 
+              }
+            }));
+          }
+        } else {
+          console.log(JSON.stringify({
+            jsonrpc: '2.0',
+            id: message.id,
+            result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+          }));
+        }
       } catch (error) {
         console.log(JSON.stringify({
           jsonrpc: '2.0',
@@ -99,6 +191,6 @@ rl.on('line', async (line) => {
       }
     }
   } catch (error) {
-    console.error('Error processing message:', error);
+    console.error('MCP Server Error:', error);
   }
 }); 

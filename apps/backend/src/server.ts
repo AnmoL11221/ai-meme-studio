@@ -19,6 +19,7 @@ import websocket from '@fastify/websocket';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import fastifyStatic from '@fastify/static';
 
 import { memeRoutes } from './routes/meme.js';
 import { templateRoutes } from './routes/templates.js';
@@ -66,6 +67,11 @@ await fastify.register(swaggerUi, {
     docExpansion: 'full',
     deepLinking: false
   }
+});
+
+await fastify.register(fastifyStatic, {
+  root: path.join(__dirname, '../uploads'),
+  prefix: '/uploads'
 });
 
   await fastify.register(memeRoutes, { prefix: '/api/memes' });
@@ -175,14 +181,47 @@ fastify.post('/mcp/invoke', async (request, reply) => {
       reply.status(400);
       return { error: 'Missing concept or description' };
     }
-    // Mimic /api/memes/create-optimized logic
+    
     const memeId = `mcp-${Date.now()}`;
     const now = new Date();
+    
+    let memeText = '';
+    let imageDescription = description;
+    
+    const textPatterns = [
+      /add the text (?:that says )?"([^"]+)"/i,
+      /text (?:that says )?"([^"]+)"/i,
+      /says "([^"]+)"/i,
+      /add "([^"]+)"/i,
+      /with text "([^"]+)"/i,
+      /text "([^"]+)"/i,
+      /add the text that says stuck in 9-5 mouse chase/i,
+      /add the text stuck in 9-5 mouse chase/i,
+      /text stuck in 9-5 mouse chase/i
+    ];
+    
+    for (const pattern of textPatterns) {
+      const match = description.match(pattern);
+      if (match) {
+        if (pattern.source.includes('stuck in 9-5 mouse chase')) {
+          memeText = 'STUCK IN 9-5 MOUSE CHASE';
+        } else {
+          memeText = match[1];
+        }
+        imageDescription = description.replace(pattern, '').replace(/\s+/g, ' ').trim();
+        break;
+      }
+    }
+    
+    if (!memeText) {
+      memeText = 'Generated Meme';
+    }
+    
     const memeState = {
       id: memeId,
       status: 'PENDING',
       concept,
-      customText: description,
+      customText: memeText,
       currentStep: MemeCreationStep.SET_DESIGN,
       createdAt: now,
       updatedAt: now
@@ -190,17 +229,31 @@ fastify.post('/mcp/invoke', async (request, reply) => {
 
     let completed;
     try {
-      completed = await optimizedOrchestrator.createOptimizedMeme(memeState as unknown as MemeCreationState);
+      const generationResult = await optimizedOrchestrator.createOptimizedMemeWithDescription(
+        memeState as unknown as MemeCreationState,
+        imageDescription
+      );
+      completed = generationResult;
     } catch (error) {
       console.log('Optimized orchestrator failed, falling back to legacy system:', error);
       completed = await orchestrator.createMeme(memeState as unknown as MemeCreationState);
     }
+    
+    const fullUrl = completed.finalMeme?.url 
+      ? (completed.finalMeme.url.startsWith('http') 
+          ? completed.finalMeme.url 
+          : `http://localhost:3001${completed.finalMeme.url}`)
+      : null;
+    
     return {
       id: completed.id,
       status: completed.status,
-      url: completed.finalMeme?.url || null,
+      url: fullUrl,
       createdAt: completed.createdAt,
-      updatedAt: completed.updatedAt
+      updatedAt: completed.updatedAt,
+      concept: completed.concept,
+      customText: completed.customText,
+      captions: completed.captions || []
     };
   } else if (method === 'listTemplates') {
     const { page = 1, limit = 50, sort = 'popularity', source } = args || {};
@@ -232,7 +285,7 @@ fastify.post('/mcp/invoke', async (request, reply) => {
       reply.status(400);
       return { error: 'At least one text field (topText, bottomText, or customText) is required' };
     }
-    // Override text positions if provided
+    
     const templateOverride = { ...template };
     if (topTextPosition) templateOverride.topTextPosition = topTextPosition;
     if (bottomTextPosition) templateOverride.bottomTextPosition = bottomTextPosition;
@@ -252,9 +305,14 @@ fastify.post('/mcp/invoke', async (request, reply) => {
         finalMemePath = await fileStorage.saveFinalMeme(finalMeme);
         finalMeme.url = finalMemePath;
       }
+      
+      const fullUrl = finalMeme.url.startsWith('http') 
+        ? finalMeme.url 
+        : `http://localhost:3001${finalMeme.url}`;
+      
       return {
         id: memeId,
-        url: finalMeme.url,
+        url: fullUrl,
         createdAt: new Date(),
         templateId,
         topText,
@@ -266,11 +324,11 @@ fastify.post('/mcp/invoke', async (request, reply) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       reply.status(500);
-      return { error: `Failed to create meme: ${errorMessage}` };
+      return { error: errorMessage };
     }
   } else {
     reply.status(400);
-    return { error: 'Unknown method' };
+    return { error: `Unknown method: ${method}` };
   }
 });
 

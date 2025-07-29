@@ -18,7 +18,7 @@ export class StabilityAIService {
   constructor() {
     this.apiKey = config.STABILITY_AI_API_KEY;
     if (!this.apiKey) {
-      console.warn('⚠️  Stability AI API key not configured. Image generation will use mock placeholder images.');
+      console.warn('⚠️  Stability AI API key not configured. Image generation will fail without a valid API key.');
     }
   }
 
@@ -29,47 +29,48 @@ export class StabilityAIService {
       height?: number;
       steps?: number;
       cfg_scale?: number;
+      negativePrompt?: string;
     } = {}
   ): Promise<GeneratedImage> {
     const {
       width = 512,
       height = 512,
       steps = 30,
-      cfg_scale = 7
+      cfg_scale = 7,
+      negativePrompt = ''
     } = options;
 
     if (!this.apiKey) {
-      console.log('🖼️  Mock image generation for:', prompt.substring(0, 50) + '...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockImageUrl = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
-      
-      return {
-        id: uuidv4(),
-        url: mockImageUrl,
-        prompt,
-        model: 'mock-generator',
-        width,
-        height,
-        generatedAt: new Date()
-      };
+      throw new Error('Stability AI API key not configured. Please set STABILITY_AI_API_KEY environment variable.');
     }
 
     try {
+      const textPrompts = [
+        {
+          text: prompt,
+          weight: 1
+        }
+      ];
+
+      if (negativePrompt) {
+        textPrompts.push({
+          text: negativePrompt,
+          weight: -1
+        });
+      }
+
       const response = await axios.post<StabilityResponse>(
         `${this.baseURL}/generation/stable-diffusion-xl-1024-v1-0/text-to-image`,
         {
-          text_prompts: [
-            {
-              text: prompt,
-              weight: 1
-            }
-          ],
+          text_prompts: textPrompts,
           cfg_scale,
           height,
           width,
           steps,
           samples: 1,
+          style_preset: "photographic",
+          seed: Math.floor(Math.random() * 1000000),
+          sampler: "K_DPMPP_2M"
         },
         {
           headers: {
@@ -85,6 +86,7 @@ export class StabilityAIService {
         throw new Error('No image generated');
       }
 
+      const imageBuffer = Buffer.from(artifact.base64, 'base64');
       const imageUrl = `data:image/png;base64,${artifact.base64}`;
 
       return {
@@ -98,6 +100,12 @@ export class StabilityAIService {
       };
     } catch (error: any) {
       console.error('Stability AI error:', error.response?.data || error.message);
+      
+      if (error.response?.status === 429 || error.response?.data?.name === 'insufficient_balance') {
+        const balanceError = error.response?.data?.message || 'Insufficient API balance';
+        throw new Error(`Stability AI API Error: ${balanceError}. Please add credits to your Stability AI account to continue generating images.`);
+      }
+      
       throw new Error(`Image generation failed: ${error.message}`);
     }
   }
@@ -137,14 +145,18 @@ export class StabilityAIService {
       throw new Error('Meme image prompt cannot be empty');
     }
     
-    const optimizedPrompt = `${prompt.trim()}, high quality, clear composition, good contrast for text overlay, professional photography, detailed, sharp focus, meme-style image, no text in image, clean background`;
-    console.log(`🎭 Generating unified meme image with prompt: "${optimizedPrompt}" (${optimizedPrompt.length} chars)`);
+    const enhancedPrompt = `${prompt.trim()}, simple clean composition, plain background, focused subject, high quality, professional photography, sharp focus, no text, perfect for meme overlay, minimalist design`;
     
-    return this.generateImage(optimizedPrompt, {
+    const negativePrompt = `blurry, low quality, pixelated, text, words, letters, watermarks, signatures, complex background, busy scene, cluttered, multiple subjects, landscape, environment, scene, setting, background details, objects, furniture, buildings, nature, trees, sky, clouds, detailed background, busy composition, multiple elements, complex scene`;
+    
+    console.log(`🎭 Generating simple meme image with prompt: "${enhancedPrompt}" (${enhancedPrompt.length} chars)`);
+    
+    return this.generateImage(enhancedPrompt, {
       width: 1024,
       height: 1024,
-      steps: 50,
-      cfg_scale: 8.0
+      steps: 40,
+      cfg_scale: 8.0,
+      negativePrompt
     });
   }
 } 

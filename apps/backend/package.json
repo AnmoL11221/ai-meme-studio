@@ -14,6 +14,7 @@
     "@ai-meme-studio/shared-types": "file:../../packages/shared-types",
     "@fastify/cors": "^8.4.2",
     "@fastify/env": "^4.2.0",
+    "@fastify/static": "^6.12.0",
     "@fastify/swagger": "^8.12.1",
     "@fastify/swagger-ui": "^2.1.0",
     "@fastify/type-provider-typebox": "^4.0.0",
@@ -27,6 +28,7 @@
     "dotenv": "^16.6.1",
     "fastify": "^4.24.3",
     "fs-extra": "^11.3.0",
+    "node-fetch": "^2.7.0",
     "sharp": "^0.33.0",
     "sqlite3": "^5.1.7",
     "uuid": "^9.0.1"

@@ -19,6 +19,76 @@ export class OptimizedMemeOrchestrator {
     this.fileStorage = new FileStorageService();
   }
 
+  async createOptimizedMemeWithDescription(
+    memeState: MemeCreationState,
+    imageDescription: string,
+    onProgress?: (event: WebSocketEvent) => void
+  ): Promise<MemeCreationState> {
+    try {
+      if (!memeState.concept) {
+        throw new Error('Concept is required for AI-generated memes');
+      }
+
+      memeState.status = MemeCreationStatus.GENERATING_BACKGROUND;
+      memeState.currentStep = MemeCreationStep.SET_DESIGN;
+      memeState.updatedAt = new Date();
+      
+      this.emitProgress(memeState, onProgress, 'Generating clean, simple meme image...');
+      
+      const generationResult = await this.unifiedGenerator.execute({
+        concept: memeState.concept,
+        description: imageDescription
+      });
+
+      this.emitProgress(memeState, onProgress, 'Adding text overlay...');
+
+      const { ImageCompositor } = await import('./imageCompositor.js');
+      const compositor = new ImageCompositor();
+      
+      let finalImage = generationResult.memeImage;
+      
+      if (memeState.customText && memeState.customText.trim()) {
+        const memeText = memeState.customText.trim();
+        console.log(`📝 Adding meme text: "${memeText}"`);
+        finalImage = await compositor.addTextToImage(generationResult.memeImage, memeText, 'auto');
+      }
+
+      const imagePath = await this.fileStorage.saveFinalMeme(finalImage);
+      
+      memeState.finalMeme = { 
+        ...finalImage, 
+        url: imagePath 
+      };
+      
+      memeState.captions = generationResult.suggestedCaptions;
+      memeState.status = MemeCreationStatus.COMPLETED;
+      memeState.currentStep = MemeCreationStep.COMPLETED;
+      memeState.updatedAt = new Date();
+      
+      this.database.saveMeme(memeState);
+      this.emitProgress(memeState, onProgress, 'Clean meme generated successfully!');
+
+      return memeState;
+    } catch (error) {
+      console.error('Optimized meme creation failed:', error);
+      
+      memeState.status = MemeCreationStatus.FAILED;
+      memeState.error = (error as Error).message;
+      memeState.updatedAt = new Date();
+      this.database.saveMeme(memeState);
+      
+      if (onProgress) {
+        onProgress({
+          type: 'error',
+          memeId: memeState.id,
+          error: (error as Error).message
+        });
+      }
+      
+      throw error;
+    }
+  }
+
   async createOptimizedMeme(
     memeState: MemeCreationState,
     onProgress?: (event: WebSocketEvent) => void
@@ -32,19 +102,32 @@ export class OptimizedMemeOrchestrator {
       memeState.currentStep = MemeCreationStep.SET_DESIGN;
       memeState.updatedAt = new Date();
       
-      this.emitProgress(memeState, onProgress, 'Generating optimized meme image...');
+      this.emitProgress(memeState, onProgress, 'Generating clean, simple meme image...');
 
-      const userDescription = memeState.customText || `A meme about: ${memeState.concept}`;
+      const imageDescription = `A meme about: ${memeState.concept}`;
       
       const generationResult = await this.unifiedGenerator.execute({
         concept: memeState.concept,
-        description: userDescription
+        description: imageDescription
       });
 
-      const imagePath = await this.fileStorage.saveFinalMeme(generationResult.memeImage);
+      this.emitProgress(memeState, onProgress, 'Adding text overlay...');
+
+      const { ImageCompositor } = await import('./imageCompositor.js');
+      const compositor = new ImageCompositor();
+      
+      let finalImage = generationResult.memeImage;
+      
+      if (memeState.customText && memeState.customText.trim()) {
+        const memeText = memeState.customText.trim();
+        console.log(`📝 Adding meme text: "${memeText}"`);
+        finalImage = await compositor.addTextToImage(generationResult.memeImage, memeText, 'auto');
+      }
+
+      const imagePath = await this.fileStorage.saveFinalMeme(finalImage);
       
       memeState.finalMeme = { 
-        ...generationResult.memeImage, 
+        ...finalImage, 
         url: imagePath 
       };
       
@@ -54,7 +137,7 @@ export class OptimizedMemeOrchestrator {
       memeState.updatedAt = new Date();
       
       this.database.saveMeme(memeState);
-      this.emitProgress(memeState, onProgress, 'Meme generated successfully! You can now add text.');
+      this.emitProgress(memeState, onProgress, 'Clean meme generated successfully!');
 
       return memeState;
     } catch (error) {
@@ -102,28 +185,26 @@ export class OptimizedMemeOrchestrator {
       const { ImageCompositor } = await import('./imageCompositor.js');
       const compositor = new ImageCompositor();
       
-      let imageWithText = memeState.finalMeme;
+      let finalImage = memeState.finalMeme;
       
-      // Add each text element one by one
-      for (const text of texts) {
-        imageWithText = await compositor.addCustomTextToImage(imageWithText, {
-          text: text.content,
-          position: { x: text.x, y: text.y },
+      for (const textElement of texts) {
+        finalImage = await compositor.addCustomTextToImage(finalImage, {
+          text: textElement.content,
+          position: { x: textElement.x, y: textElement.y },
           style: {
-            fontSize: text.fontSize,
-            color: text.color,
-            fontWeight: text.fontWeight || 'bold',
-            fontFamily: 'Impact, Arial Black, sans-serif'
+            fontSize: textElement.fontSize,
+            color: textElement.color,
+            fontWeight: textElement.fontWeight,
+            fontFamily: 'Impact'
           }
         });
       }
 
-      // Save the new image with text
-      const finalImagePath = await this.fileStorage.saveFinalMeme(imageWithText);
+      const imagePath = await this.fileStorage.saveFinalMeme(finalImage);
       
       memeState.finalMeme = {
-        ...imageWithText,
-        url: finalImagePath
+        ...finalImage,
+        url: imagePath
       };
       
       memeState.updatedAt = new Date();

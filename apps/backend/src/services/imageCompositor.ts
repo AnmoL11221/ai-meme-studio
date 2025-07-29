@@ -39,7 +39,6 @@ export class ImageCompositor {
         throw new Error('Unable to get template dimensions');
       }
 
-      // Create SVG overlay for text
       const textOverlays = [];
       console.log(`📝 Adding text overlays - Top: "${topText}", Bottom: "${bottomText}"`);
 
@@ -130,38 +129,54 @@ export class ImageCompositor {
       .replace(/'/g, '&#39;');
   }
 
-  private createMemeCaptionSvg(text: string, imageWidth: number, imageHeight: number): string {
-    const fontSize = Math.max(32, Math.min(80, Math.floor(imageWidth / 15)));
+  private createMemeCaptionSvg(text: string, imageWidth: number, imageHeight: number, position: 'top' | 'bottom' = 'bottom'): string {
+    const fontSize = Math.max(32, Math.min(120, Math.floor(imageWidth / 15)));
+    const strokeWidth = Math.max(2, Math.floor(fontSize / 20));
+    const lines = this.wrapText(text, Math.floor(imageWidth / (fontSize * 0.7)));
     const lineHeight = fontSize * 1.3;
-    
-    const maxCharsPerLine = Math.floor(imageWidth / (fontSize * 0.6));
-    const lines = this.wrapText(text, maxCharsPerLine);
     const totalTextHeight = lines.length * lineHeight;
     
-    const padding = fontSize;
-    const textY = imageHeight - totalTextHeight - padding;
+    const padding = 80;
+    let textY: number;
     
+    if (position === 'top') {
+      textY = padding;
+    } else {
+      textY = Math.max(padding, imageHeight - totalTextHeight - padding);
+    }
+    
+    const textX = imageWidth / 2;
+
     return `
       <svg width="${imageWidth}" height="${imageHeight}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <style>
-            .meme-caption {
-              font-family: 'Impact', 'Arial Black', Arial, sans-serif;
-              font-size: ${fontSize}px;
-              font-weight: 900;
-              text-anchor: middle;
-              dominant-baseline: middle;
-              fill: white;
-              stroke: black;
-              stroke-width: ${Math.max(2, fontSize / 20)};
-              paint-order: stroke fill;
-              text-transform: uppercase;
-            }
-          </style>
+          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.8)"/>
+            <feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.6)"/>
+          </filter>
+          <linearGradient id="textGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+          </linearGradient>
         </defs>
-        ${lines.map((line, index) => 
-          `<text x="${imageWidth / 2}" y="${textY + (index * lineHeight)}" class="meme-caption">${this.escapeXml(line)}</text>`
-        ).join('')}
+        ${lines.map((line, index) => `
+          <text 
+            x="${textX}" 
+            y="${textY + (index * lineHeight) + fontSize}" 
+            font-family="Impact, Arial Black, sans-serif" 
+            font-size="${fontSize}px" 
+            font-weight="900" 
+            text-anchor="middle" 
+            dominant-baseline="middle"
+            fill="url(#textGradient)"
+            stroke="#000000" 
+            stroke-width="${strokeWidth}"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            filter="url(#shadow)"
+            style="text-transform: uppercase; letter-spacing: 1px;"
+          >${this.escapeXml(line)}</text>
+        `).join('')}
       </svg>
     `;
   }
@@ -354,108 +369,125 @@ export class ImageCompositor {
     return blendModes[mode] || 'over';
   }
 
-  // Legacy method for backward compatibility - composite images
   async compositeImages(background: GeneratedImage, character: GeneratedImage): Promise<GeneratedImage> {
     try {
-      let backgroundBuffer: Buffer;
-      let characterBuffer: Buffer;
+      console.log(`🎨 Compositing background and character images`);
       
-      if (background.url.startsWith('data:image')) {
-        backgroundBuffer = Buffer.from(background.url.split(',')[1], 'base64');
-      } else {
-        const response = await fetch(background.url);
-        backgroundBuffer = Buffer.from(await response.arrayBuffer());
-      }
+      const backgroundData = background.url.startsWith('data:') 
+        ? Buffer.from(background.url.split(',')[1], 'base64')
+        : await this.downloadImage(background.url);
       
-      if (character.url.startsWith('data:image')) {
-        characterBuffer = Buffer.from(character.url.split(',')[1], 'base64');
-      } else {
-        const response = await fetch(character.url);
-        characterBuffer = Buffer.from(await response.arrayBuffer());
+      const characterData = character.url.startsWith('data:') 
+        ? Buffer.from(character.url.split(',')[1], 'base64')
+        : await this.downloadImage(character.url);
+
+      const backgroundImage = sharp(backgroundData);
+      const characterImage = sharp(characterData);
+
+      const bgMetadata = await backgroundImage.metadata();
+      const charMetadata = await characterImage.metadata();
+
+      if (!bgMetadata.width || !bgMetadata.height || !charMetadata.width || !charMetadata.height) {
+        throw new Error('Unable to get image dimensions');
       }
 
-      const backgroundProcessed = sharp(backgroundBuffer)
-        .resize(1344, 768, { fit: 'cover' });
+      const resizedCharacter = characterImage.resize({
+        width: Math.floor(bgMetadata.width * 0.4),
+        height: Math.floor(bgMetadata.height * 0.6),
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      });
 
-      const characterProcessed = sharp(characterBuffer)
-        .resize(450, 650, { fit: 'inside', withoutEnlargement: true });
+      const compositeImage = backgroundImage.composite([{
+        input: await resizedCharacter.toBuffer(),
+        top: Math.floor(bgMetadata.height * 0.2),
+        left: Math.floor(bgMetadata.width * 0.3)
+      }]);
 
-      const composited = await backgroundProcessed
-        .composite([
-          {
-            input: await characterProcessed.toBuffer(),
-            top: 60,
-            left: 450,
-            blend: 'over'
-          }
-        ])
-        .png()
-        .toBuffer();
-
-      const compositedBase64 = composited.toString('base64');
-      const compositedUrl = `data:image/png;base64,${compositedBase64}`;
+      const outputBuffer = await compositeImage.png({ quality: 100 }).toBuffer();
 
       return {
         id: uuidv4(),
-        url: compositedUrl,
-        prompt: `Composition of: ${background.prompt} + ${character.prompt}`,
-        model: 'composite',
-        width: 1344,
-        height: 768,
+        url: `data:image/png;base64,${outputBuffer.toString('base64')}`,
+        prompt: `Composite: ${background.prompt} + ${character.prompt}`,
+        model: 'compositor',
+        width: bgMetadata.width,
+        height: bgMetadata.height,
         generatedAt: new Date()
       };
     } catch (error) {
-      console.error('Image composition error:', error);
+      console.error('Error compositing images:', error);
       throw new Error(`Failed to composite images: ${(error as Error).message}`);
     }
   }
 
-  // Legacy method for backward compatibility - add text
-  async addTextToImage(image: GeneratedImage, text: string): Promise<GeneratedImage> {
+  async addTextToImage(image: GeneratedImage, text: string, position: 'top' | 'bottom' | 'auto' = 'auto'): Promise<GeneratedImage> {
     try {
-      let imageBuffer: Buffer;
+      console.log(`📝 Adding text to image: "${text}" at ${position}`);
       
-      if (image.url.startsWith('data:image')) {
-        imageBuffer = Buffer.from(image.url.split(',')[1], 'base64');
-      } else {
-        const response = await fetch(image.url);
-        imageBuffer = Buffer.from(await response.arrayBuffer());
-      }
+      const imageData = image.url.startsWith('data:') 
+        ? Buffer.from(image.url.split(',')[1], 'base64')
+        : await this.downloadImage(image.url);
 
-      const baseImage = sharp(imageBuffer);
-      const { width, height } = await baseImage.metadata();
-
-      if (!width || !height) {
+      let sharpImage = sharp(imageData);
+      const metadata = await sharpImage.metadata();
+      
+      if (!metadata.width || !metadata.height) {
         throw new Error('Unable to get image dimensions');
       }
 
-      const textSvg = this.createMemeCaptionSvg(text, width, height);
-      
-      const finalBuffer = await baseImage
-        .composite([{
-          input: Buffer.from(textSvg),
-          top: 0,
-          left: 0,
-        }])
-        .png()
-        .toBuffer();
+      let finalPosition: 'top' | 'bottom' = 'bottom';
+      if (position === 'auto') {
+        finalPosition = this.determineBestTextPosition(metadata.width, metadata.height, text);
+      } else {
+        finalPosition = position;
+      }
 
-      const base64Image = finalBuffer.toString('base64');
-      const dataUrl = `data:image/png;base64,${base64Image}`;
+      const svgText = this.createMemeCaptionSvg(text, metadata.width, metadata.height, finalPosition);
+      
+      const compositeImage = sharpImage.composite([{
+        input: Buffer.from(svgText),
+        top: 0,
+        left: 0
+      }]);
+
+      const outputBuffer = await compositeImage.png({ quality: 100 }).toBuffer();
+      
+      console.log(`✅ Text added successfully to image at ${finalPosition}`);
 
       return {
+        ...image,
         id: uuidv4(),
-        url: dataUrl,
-        prompt: image.prompt + ` with text: ${text}`,
-        model: image.model,
-        width,
-        height,
-        generatedAt: new Date(),
+        url: `data:image/png;base64,${outputBuffer.toString('base64')}`,
+        prompt: `${image.prompt} + Text: "${text}"`,
+        generatedAt: new Date()
       };
     } catch (error) {
       console.error('Error adding text to image:', error);
-      throw new Error(`Text addition failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to add text: ${(error as Error).message}`);
     }
+  }
+
+  private determineBestTextPosition(width: number, height: number, text: string): 'top' | 'bottom' {
+    const textLength = text.length;
+    const aspectRatio = width / height;
+    
+    if (textLength > 20 || aspectRatio > 1.2) {
+      return 'bottom';
+    } else {
+      return 'top';
+    }
+  }
+
+  private async downloadImage(url: string): Promise<Buffer> {
+    const response = await axios.get(url, { 
+      responseType: 'arraybuffer',
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'AI-Meme-Studio/1.0'
+      }
+    });
+    return Buffer.from(response.data);
   }
 
   async addCustomTextToImage(

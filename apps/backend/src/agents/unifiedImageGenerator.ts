@@ -53,28 +53,34 @@ export class UnifiedImageGenerator extends BaseAIAgent {
   }
 
   private async createOptimizedPrompt(description: string, concept: string): Promise<string> {
-    const prompt = `Create an optimized image generation prompt for a meme based on this description: "${description}" with concept: "${concept}".
+    const prompt = `Create a simple, clean image generation prompt for a meme based on this description: "${description}" with concept: "${concept}".
 
-    The prompt should:
-    - Create a single, cohesive image perfect for meme text overlay
-    - Be visually clear and uncluttered with good composition
-    - Have strong contrast areas at top and bottom for text placement
-    - Be immediately recognizable and relatable
-    - Capture the essence of the meme concept
-    - Use professional photography style with good lighting
-    - Avoid text in the image (text will be added later)
-    - Create a scene that tells a story or conveys emotion
-    - Use vibrant colors and clear subjects
-    - Ensure the image works well with white text overlay
+    The prompt must create:
+    - Simple, clean composition with minimal background
+    - Clear, focused subject in the center
+    - Plain, solid background (white, light gray, or simple color)
+    - High quality, sharp focus on the main subject
+    - No complex backgrounds, scenes, or environments
+    - No text, words, or letters anywhere in the image
+    - Perfect for text overlay with clear space at top and bottom
+    - Professional photography quality
+    - Clean, uncluttered design
     
-    Return only the optimized prompt, no explanations.`;
+    Style requirements:
+    - Minimalist approach
+    - Simple, clean aesthetic
+    - Focus on the main subject only
+    - Plain background that doesn't distract
+    - High contrast for text readability
+    
+    Return only the optimized prompt, no explanations or formatting.`;
 
     try {
       const response = await this.openaiService.generateText(prompt);
-      return response || description;
+      return response || `${description}, simple clean composition, plain background, focused subject, high quality, no text, perfect for meme overlay`;
     } catch (error) {
-      this.log('Falling back to original description due to OpenAI error');
-      return `${description}, clear background for text, high contrast, meme-style image, professional photography, good lighting`;
+      this.log('Falling back to simplified description due to OpenAI error');
+      return `${description}, simple clean composition, plain background, focused subject, high quality, no text, perfect for meme overlay`;
     }
   }
 
